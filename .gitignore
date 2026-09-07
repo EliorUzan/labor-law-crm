@@ -1,0 +1,18 @@
+# Dependencies and build output
+node_modules/
+.pnpm-store/
+.next/
+out/
+coverage/
+
+# Environment files and local Supabase data
+.env
+.env.*
+!.env.example
+supabase/.temp/
+
+# Tooling and operating-system files
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+*.log
