@@ -66,16 +66,19 @@ bootstrap intentionally has no CRM tables or migrations.
 ## Authentication and data protection
 
 Supabase Auth will provide email/password or magic-link sign-in, session handling,
-and an `auth.users` identity. The application will use that authenticated identity
-for normal access checks; it will not hard-code a lawyer identity. A small internal
-profile record may be added only if application preferences require it.
+and an `auth.users` identity. V1 has one regular lawyer user and no public user
+registration: the lawyer account is provisioned manually through Supabase. The
+application will use that authenticated identity for normal access checks; it will
+not hard-code a lawyer identity. A small internal profile record may be added only
+if application preferences require it.
 
 V1 has no teams, role matrix, or per-matter permissions. Server-side checks still
-require an authenticated user for CRM reads/writes. Before exposing Supabase data
-to browser clients, Thread 1 must add appropriate row-level security policies.
-Sensitive values are never placed in `NEXT_PUBLIC_*` variables, logs, or client
-bundles. Production deployment must use HTTPS and Supabase backup/recovery
-settings should be reviewed before live data is imported.
+require an authenticated user for CRM reads/writes, and unauthenticated users
+cannot access CRM routes. Do not build user management or invitation flows. Before
+exposing Supabase data to browser clients, Thread 1 must add appropriate row-level
+security policies. Sensitive values are never placed in `NEXT_PUBLIC_*` variables,
+logs, or client bundles. Production deployment must use HTTPS and Supabase
+backup/recovery settings should be reviewed before live data is imported.
 
 ## Deployment
 

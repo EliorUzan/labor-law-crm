@@ -14,7 +14,6 @@ Authenticated user
        ├── Financial records
        └── Matters
             ├── Case-history entries
-            ├── Matter notes
             ├── Tasks
             ├── Deadlines
             ├── Important dates
@@ -38,8 +37,8 @@ remaining single-user-first.
 | `matters` | client reference, title | case type, status, open date, case number, court/tribunal, opposing party, opposing-attorney name/phone/email/firm, notes | Belongs to one Client; has related work/history/documents. Opposing attorney fields stay simple Matter leaf data, not a contact graph. |
 | `client_obligations` | client reference, title, completion state | matter reference, description, due date | Belongs to Client; may reference Matter; appears globally while open. |
 | `financial_records` | client reference, record type, amount, date | matter reference, description/note | Belongs to Client; may reference Matter. Record type distinguishes fee/charge/payment and supports a lightweight balance, not bookkeeping. |
-| `tasks` | matter reference, title, done flag | description, due date, deadline reference | Belongs to Matter. Only done/undone status—no priority, assignee, labels, or workflow state. |
-| `deadlines` | matter reference, title, due date | description, task reference | Standalone and prominent legal deadline; may reference a Task but is not a Task due date. |
+| `tasks` | matter reference, title, done flag | description, deadline reference (`deadline_id`) | Belongs to Matter. A Task may reference one standalone Deadline from the same Matter; it has no separate due-date field. Only done/undone status—no priority, assignee, labels, or workflow state. |
+| `deadlines` | matter reference, title, due date | description | Standalone and prominent legal deadline. It does not store a Task reference and is not a Task due date. |
 | `important_dates` | matter reference, title, event date | description/type | Matter-level event date, distinct from a Deadline and Task. |
 | `matter_history` | matter reference, event date, title | description | Manually maintained milestone; displayed newest first by `event_date`, not creation time. |
 | `document_references` | matter reference, display name, location/URL | category, notes, provider, external ID | V1 metadata/reference only; no file storage or synchronization. |
@@ -52,8 +51,11 @@ remaining single-user-first.
   reference is optional and, if set, must belong to the same Client.
 - Tasks, Deadlines, Important Dates, history entries, and document references
   always belong to a Matter.
-- A Deadline’s optional Task association must reference a Task from the same
-  Matter.
+- A Task’s optional `deadline_id` must reference a Deadline from the same Matter.
+  This is the only Task ↔ Deadline association; `deadlines` has no `task_id`, and
+  Tasks have no separate due-date field.
+- Matter notes are one optional free-text field on `matters`; there is no
+  `matter_notes` table. Dated milestones belong in `matter_history`.
 - Amounts should use an exact decimal/numeric database type, never a floating
   point number. Currency defaults/formatting can be decided with the financial UI;
   do not create multi-currency support without a requirement.
