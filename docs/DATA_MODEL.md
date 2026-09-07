@@ -22,11 +22,11 @@ Authenticated user
 Accounting records are office-level records.
 ```
 
-Every application-owned record has `id`, `created_at`, and `updated_at` unless a
-record’s append-only behavior makes `updated_at` unnecessary. IDs should be UUIDs
-or another generated opaque identifier. A future schema should attach data to the
-authenticated account/profile as needed for safe server-side scoping, while still
-remaining single-user-first.
+Every application-owned record has generated UUID `id`, `owner_user_id`,
+`created_at`, and `updated_at`. `owner_user_id` is the authenticated Supabase user
+UUID; application code must source it from the verified server session and scope
+all reads/writes by it. It remains single-user-first without assuming one user is
+authorized to see another user's records.
 
 ## Entities
 
@@ -59,8 +59,13 @@ remaining single-user-first.
 - Amounts should use an exact decimal/numeric database type, never a floating
   point number. Currency defaults/formatting can be decided with the financial UI;
   do not create multi-currency support without a requirement.
-- Deletion behavior will be selected alongside actual UI and retention needs;
-  do not silently cascade-delete legal history or financial records.
+- The initial migration uses restrictive foreign keys. A Client, Matter, Deadline,
+  or other referenced record cannot be deleted while its legal/financial history
+  remains. There is intentionally no cascade deletion.
+- Composite foreign keys enforce Client/Matter ownership consistency, including a
+  linked Client obligation or Financial record Matter and a Task Deadline when
+  those optional references are set. Future server writes must still use the
+  authenticated owner value and validate input at their boundary.
 
 ## Explicit exclusions
 

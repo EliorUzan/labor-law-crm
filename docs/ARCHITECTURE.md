@@ -54,31 +54,36 @@ application functions directly.
 
 ## Database access and schema changes
 
-`src/db/client.ts` contains the server-only Drizzle connection factory. Later
-database work will define explicit Drizzle schemas and checked-in SQL migrations.
-Every schema change must have a reviewed migration; no production schema editing
-through an ad-hoc dashboard is the source of truth. Database credentials remain
-server-only in `DATABASE_URL`.
+`src/db/client.ts` contains the server-only Drizzle connection factory and
+`src/db/schema.ts` contains the V1 schema. Checked-in SQL migrations live in
+`src/db/migrations`; `pnpm db:generate` creates a migration and `pnpm db:migrate`
+applies it. Every schema change must have a reviewed migration; no production
+schema editing through an ad-hoc dashboard is the source of truth. Database
+credentials remain server-only in `DATABASE_URL`.
 
-The Thread 1 database/auth implementation will create the initial schema. This
-bootstrap intentionally has no CRM tables or migrations.
+All application records carry `owner_user_id`, the UUID from Supabase Auth.
+Server-side code obtains it only through the verified auth helper and scopes each
+Drizzle query or write with it. The initial migration also enables RLS with
+matching authenticated-owner policies as defence in depth; CRM data is still not
+queried from browser code.
 
 ## Authentication and data protection
 
-Supabase Auth will provide email/password or magic-link sign-in, session handling,
-and an `auth.users` identity. V1 has one regular lawyer user and no public user
+Supabase Auth provides email/password sign-in, cookie-backed session handling, and
+an `auth.users` identity. V1 has one regular lawyer user and no public user
 registration: the lawyer account is provisioned manually through Supabase. The
-application will use that authenticated identity for normal access checks; it will
-not hard-code a lawyer identity. A small internal profile record may be added only
-if application preferences require it.
+application uses that authenticated identity for normal access checks; it does not
+hard-code a lawyer identity. A small internal profile record may be added only if
+application preferences require it.
 
-V1 has no teams, role matrix, or per-matter permissions. Server-side checks still
-require an authenticated user for CRM reads/writes, and unauthenticated users
-cannot access CRM routes. Do not build user management or invitation flows. Before
-exposing Supabase data to browser clients, Thread 1 must add appropriate row-level
-security policies. Sensitive values are never placed in `NEXT_PUBLIC_*` variables,
-logs, or client bundles. Production deployment must use HTTPS and Supabase
-backup/recovery settings should be reviewed before live data is imported.
+V1 has no teams, role matrix, or per-matter permissions. `src/proxy.ts` refreshes
+the Supabase session and redirects unauthenticated traffic to `/login`; protected
+pages independently verify claims through `requireAuthenticatedUserId`. Do not
+build user management or invitation flows. Sensitive values are never placed in
+`NEXT_PUBLIC_*` variables, logs, or client bundles (the Supabase URL and
+publishable key are intentionally public). Production deployment must use HTTPS
+and Supabase backup/recovery settings should be reviewed before live data is
+imported.
 
 ## Deployment
 
