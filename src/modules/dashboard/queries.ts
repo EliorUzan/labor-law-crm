@@ -35,7 +35,7 @@ export type DashboardData = {
     matterTitle: string | null;
     dueDate: string | null;
   }>;
-  recentMatters: Array<{ title: string; clientName: string; status: string | null }>;
+  recentMatters: Array<{ id: string; title: string; clientName: string; status: string | null }>;
   financialSummary: { outstandingAmount: string; paymentsReceivedThisMonth: string };
 };
 
@@ -119,7 +119,7 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
         .orderBy(asc(clientObligations.dueDate), desc(clientObligations.createdAt))
         .limit(DASHBOARD_LIST_LIMIT),
       database
-        .select({ title: matters.title, clientName: clients.name, status: matters.status })
+        .select({ id: matters.id, title: matters.title, clientName: clients.name, status: matters.status })
         .from(matters)
         .innerJoin(
           clients,

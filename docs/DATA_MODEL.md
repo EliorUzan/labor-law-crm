@@ -34,13 +34,14 @@ authorized to see another user's records.
 | --- | --- | --- | --- |
 | `profiles` | authenticated user reference | display/preferences only when needed | One profile per Supabase Auth user; do not hard-code a user. |
 | `clients` | name | phone, email, address, notes, status (`potential`, `active`, `former`) | Has many Matters, Financial records, Client obligations. Never stores an Israeli ID number. |
-| `matters` | client reference, title | case type, status, open date, case number, court/tribunal, opposing party, opposing-attorney name/phone/email/firm, notes | Belongs to one Client; has related work/history/documents. Opposing attorney fields stay simple Matter leaf data, not a contact graph. |
+| `matters` | client reference, title | case type, status, open date, case number, court/tribunal, opposing party, opposing-attorney name/phone/email/firm | Belongs to one Client; has related work/history/notes/documents. Opposing attorney fields stay simple Matter leaf data, not a contact graph. |
 | `client_obligations` | client reference, title, completion state | matter reference, description, due date | Belongs to Client; may reference Matter; appears globally while open. |
 | `financial_records` | client reference, record type, amount, date | matter reference, description/note | Belongs to Client; may reference Matter. Record type distinguishes fee/charge/payment and supports a lightweight balance, not bookkeeping. |
 | `tasks` | matter reference, title, done flag | description, deadline reference (`deadline_id`) | Belongs to Matter. A Task may reference one standalone Deadline from the same Matter; it has no separate due-date field. Only done/undone status—no priority, assignee, labels, or workflow state. |
 | `deadlines` | matter reference, title, due date | description | Standalone and prominent legal deadline. It does not store a Task reference and is not a Task due date. |
 | `important_dates` | matter reference, title, event date | description/type | Matter-level event date, distinct from a Deadline and Task. |
-| `matter_history` | matter reference, event date, title | description | Manually maintained milestone; displayed newest first by `event_date`, not creation time. |
+| `matter_notes` | matter reference, content | generated creation/update timestamps | Informal working note. Displayed newest first by `created_at`; no title, tags, category, priority, or author selector. |
+| `matter_history` | matter reference, event date, title | description | Manually maintained milestone; displayed oldest first by `event_date`, then creation time for ties. |
 | `document_references` | matter reference, display name, location/URL | category, notes, provider, external ID | V1 metadata/reference only; no file storage or synchronization. |
 | `accounting_records` | type, date, description | amount, document/link, notes | Office-level lightweight organizational record; not a tax/invoicing engine. |
 
@@ -54,8 +55,18 @@ authorized to see another user's records.
 - A Task’s optional `deadline_id` must reference a Deadline from the same Matter.
   This is the only Task ↔ Deadline association; `deadlines` has no `task_id`, and
   Tasks have no separate due-date field.
-- Matter notes are one optional free-text field on `matters`; there is no
-  `matter_notes` table. Dated milestones belong in `matter_history`.
+- Matter Notes belong to a Matter in `matter_notes`. Each has required content,
+  an owner and generated timestamps; ordinary notes do not have a user-entered
+  date. They display newest first by `created_at`. Dated milestones belong in
+  `matter_history`, which displays oldest first by `event_date`.
+- Thread 4 Matter forms accept optional status `active`, `waiting`, or `closed`
+  (Hebrew: פעיל, בהמתנה, נסגר), or unset. The existing nullable text column is
+  retained; no migration is needed. Legacy free-text values remain visible and
+  require an explicit selection when editing. Only the title is required in the
+  Matter form. The Client and authenticated owner are supplied by server context.
+- Case History requires an event date and title; description is optional. Entries
+  are ordered by event date ascending, with creation time and ID only breaking
+  ties. Corrections update date/title/description; no deletion is exposed.
 - Amounts should use an exact decimal/numeric database type, never a floating
   point number. Currency defaults/formatting can be decided with the financial UI;
   do not create multi-currency support without a requirement.

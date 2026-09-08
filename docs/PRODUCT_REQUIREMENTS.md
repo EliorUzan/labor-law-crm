@@ -621,23 +621,24 @@ Use a simple form with:
 ## HIST-004 — Ordering
 
 History entries must be displayed:
-- newest first;
+- oldest first;
 - based on the user-entered event date.
 
-Do not sort primarily by record creation time.
+Do not sort primarily by record creation time; use creation time only as a stable
+ascending tie-breaker for entries on the same event date.
 
 ---
 
 ## HIST-005 — Example
 
 ```text
-07 Sep 2026
-Settlement proposal received
-Opposing counsel proposed ₪85,000 plus costs.
-
 28 Aug 2026
 Statement of defense filed
 Filed before the regional labor court.
+
+07 Sep 2026
+Settlement proposal received
+Opposing counsel proposed ₪85,000 plus costs.
 ```
 
 ---
@@ -646,13 +647,15 @@ Filed before the regional labor court.
 
 ## NOTE-001 — Notes
 
-A Matter should contain a simple notes area for free-text information that does not necessarily represent a dated Case History milestone.
+A Matter has multiple simple notes entries for free-text information that does not
+necessarily represent a dated Case History milestone. Each note contains required
+content and an automatically generated creation timestamp. Notes display newest
+first by creation time. Notes have no title, category, priority, tags, author
+selector, or rich workflow state.
 
-The exact UX may be:
-- one editable notes field; or
-- simple note entries.
-
-Prefer the simpler option unless implementation requirements justify multiple notes.
+Notes are distinct from Case History: Case History uses a user-entered event date,
+title and optional description for significant milestones, and displays oldest
+first by event date.
 
 ---
 

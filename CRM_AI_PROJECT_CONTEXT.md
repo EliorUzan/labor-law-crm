@@ -189,8 +189,14 @@ Entry fields:
 
 Rules:
 - Very easy to add.
-- Display newest → oldest according to the date entered.
+- Display oldest → newest according to the date entered.
 - It represents important milestones, not a complete automatic event log.
+
+### Matter Notes
+
+Matter Notes are separate informal working-note entries. Each entry has note
+content and an automatically generated creation timestamp. Notes display newest
+→ oldest. They are distinct from Case History, which records dated milestones.
 
 Example:
 - 07 Sep 2026 — Settlement proposal received

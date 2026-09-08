@@ -62,7 +62,6 @@ export const matters = pgTable(
     opposingAttorneyPhone: text("opposing_attorney_phone"),
     opposingAttorneyEmail: text("opposing_attorney_email"),
     opposingAttorneyFirm: text("opposing_attorney_firm"),
-    notes: text("notes"),
     ...timestamps(),
   },
   (table) => [
@@ -79,6 +78,29 @@ export const matters = pgTable(
     ),
     index("matters_owner_user_id_idx").on(table.ownerUserId),
     index("matters_owner_user_id_client_id_idx").on(table.ownerUserId, table.clientId),
+  ],
+);
+
+export const matterNotes = pgTable(
+  "matter_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    ownerUserId: uuid("owner_user_id").notNull(),
+    matterId: uuid("matter_id").notNull(),
+    content: text("content").notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    foreignKey({
+      name: "matter_notes_owner_user_id_matter_id_matters_owner_user_id_id_fk",
+      columns: [table.ownerUserId, table.matterId],
+      foreignColumns: [matters.ownerUserId, matters.id],
+    }).onDelete("restrict"),
+    index("matter_notes_owner_user_id_matter_id_created_at_idx").on(
+      table.ownerUserId,
+      table.matterId,
+      table.createdAt,
+    ),
   ],
 );
 

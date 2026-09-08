@@ -3,6 +3,7 @@ import { formatIsraeliDate, formatIsraeliShekels } from "@/modules/dashboard/for
 import { FinancialRecordForm, ObligationForm, ObligationCompletion } from "./forms";
 import { clientStatusLabels, financialTypeLabels, panelClass, buttonClass } from "./presentation";
 import type { ClientDetail } from "./queries";
+import { matterStatusLabel } from "@/modules/matters/presentation";
 
 export function ClientDetailView({ data, today }: { data: ClientDetail; today: string }) {
   const { client, matters, records, obligations, financialSummary } = data;
@@ -71,10 +72,11 @@ export function ClientDetailView({ data, today }: { data: ClientDetail; today: s
     </section>
 
     <section className={panelClass}>
-      <h2 className="text-lg font-bold">תיקים</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-bold">תיקים <span className="text-sm font-normal text-stone-500">({matters.length})</span></h2>
+        <Link className={buttonClass} href={`/clients/${client.id}/matters/new`}>+ תיק חדש</Link></div>
       {matters.length ? <ul className="mt-2 divide-y divide-stone-100">{matters.map((matter) => <li key={matter.id} className="py-3">
-        <p className="break-words font-medium">{matter.title}</p>
-        {(matter.status || matter.caseNumber) && <p className="mt-1 text-sm text-stone-500">{matter.status}{matter.caseNumber && <bdi className="ms-2">{matter.caseNumber}</bdi>}</p>}
+        <Link className="break-words font-medium text-teal-800 hover:underline" href={`/matters/${matter.id}`}><bdi>{matter.title}</bdi></Link>
+        {(matter.status || matter.caseNumber) && <p className="mt-1 text-sm text-stone-500">{matterStatusLabel(matter.status)}{matter.caseNumber && <bdi className="ms-2">{matter.caseNumber}</bdi>}</p>}
       </li>)}</ul> : <p className="mt-3 text-sm text-stone-500">אין תיקים ללקוח זה</p>}
     </section>
   </div>;

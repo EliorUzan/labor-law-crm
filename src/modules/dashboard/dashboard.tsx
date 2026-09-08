@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { matterStatusLabel } from "@/modules/matters/presentation";
 import {
   formatIsraeliDate,
   formatIsraeliDateTime,
@@ -128,9 +129,9 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
           ) : (
             <ul className="divide-y divide-stone-100">
               {data.recentMatters.map((matter) => (
-                <li className="py-3 first:pt-0 last:pb-0" key={`${matter.clientName}-${matter.title}`}>
-                  <p className="font-medium text-stone-900">{matter.title}</p>
-                  <Metadata>{[matter.clientName, matter.status].filter(Boolean).join(" · ")}</Metadata>
+                <li className="py-3 first:pt-0 last:pb-0" key={matter.id}>
+                  <Link className="break-words font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/matters/${matter.id}`}><bdi>{matter.title}</bdi></Link>
+                  <Metadata>{[matter.clientName, matterStatusLabel(matter.status)].filter(Boolean).join(" · ")}</Metadata>
                 </li>
               ))}
             </ul>

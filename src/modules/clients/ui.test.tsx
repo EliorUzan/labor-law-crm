@@ -39,7 +39,7 @@ describe("Client presentation", () => {
     expect(container.textContent).not.toContain("דוא״ל");
     expect(container.textContent).toContain("אין תיקים ללקוח זה");
     expect(container.querySelector('select[name="matterId"]')).toBeNull();
-    expect(container.querySelector('a[href*="matters"]')).toBeNull();
+    expect(container.querySelector(`a[href="/clients/${clientId}/matters/new"]`)?.textContent).toBe("+ תיק חדש");
   });
   it("shows only supplied details with isolated LTR email/phone", () => {
     container.innerHTML = renderToStaticMarkup(<ClientDetailView data={{ ...data, client: { ...data.client, phone: "050-1234567", email: "test@example.com" } }} today="2026-09-08" />);
