@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useOptimistic, useState, useTransition } from "react";
+import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
 import { buttonClass, inputClass } from "@/modules/clients/presentation";
 import { saveTask, saveDeadline, saveImportantDate, setTaskDone, type WorkFormState } from "./actions";
 import { importantDateTypes } from "./presentation";
@@ -31,7 +31,7 @@ export function WorkForm({ matterId, recordId, initial, kind, deadlines = [] }: 
           <option value="">ללא דדליין</option>
           {deadlines.map((deadline) => <option key={deadline.id} value={deadline.id}>{deadline.label}</option>)}
         </select>
-        <button type="button" className="mt-2 text-sm font-medium text-teal-800 underline" onClick={() => setCreateDeadline((open) => !open)}>
+        <button type="button" className="mt-2 text-sm font-medium text-teal-800 underline disabled:opacity-60" disabled={pending} onClick={() => setCreateDeadline((open) => !open)}>
           {createDeadline ? "בחירת דדליין קיים" : "+ יצירת דדליין חדש"}
         </button>
       </label> : kind === "deadline" ? <DeadlineDateFields
@@ -44,7 +44,7 @@ export function WorkForm({ matterId, recordId, initial, kind, deadlines = [] }: 
         <label>כותרת דדליין (חובה)<input className={inputClass} name="newDeadlineTitle" required maxLength={300} dir="auto" defaultValue={value("newDeadlineTitle")} /></label>
         <label>תאריך דדליין (חובה)<input className={inputClass} name="newDeadlineDate" type="date" required dir="ltr" defaultValue={value("newDeadlineDate")} /></label>
         <div className="sm:col-span-2">
-          <button type="button" className="text-sm font-medium text-teal-800 underline" onClick={() => setShowNewDeadlineTime((shown) => !shown)}>
+          <button type="button" className="text-sm font-medium text-teal-800 underline disabled:opacity-60" disabled={pending} onClick={() => setShowNewDeadlineTime((shown) => !shown)}>
             {showNewDeadlineTime ? "הסתרת שעה" : "+ הוספת שעה"}
           </button>
           {showNewDeadlineTime && <label className="mt-2 block">שעה — שעון ישראל (אופציונלי)
@@ -86,19 +86,28 @@ function DeadlineDateFields({ value, showTime, onToggleTime }: {
 
 export function TaskCheckbox({ matterId, taskId, done, title }: { matterId: string; taskId: string; done: boolean; title: string }) {
   const [pending, startTransition] = useTransition();
-  const [checked, setChecked] = useOptimistic(done);
+  const [checked, setChecked] = useState(done);
   const [error, setError] = useState<string>();
+  const previousDone = useRef(done);
+  useEffect(() => {
+    if (previousDone.current !== done) {
+      previousDone.current = done;
+      setChecked(done);
+    }
+  }, [done]);
   return <div>
     <label className="flex min-h-11 cursor-pointer items-center gap-3">
       <input className="size-5 shrink-0 accent-teal-700" type="checkbox" checked={checked} disabled={pending}
         onChange={(event) => {
           const nextDone = event.currentTarget.checked;
           setError(undefined);
+          // Reflect the checkbox click synchronously; the server mutation itself
+          // remains in a transition so repeat clicks are disabled while it saves.
+          setChecked(nextDone);
           startTransition(async () => {
-            setChecked(nextDone);
             try {
               const result = await setTaskDone(matterId, taskId, nextDone);
-              if (result.error) setError(result.error);
+              if (result.error) { setChecked(done); setError(result.error); }
             } catch { setError("עדכון המשימה נכשל. נסו שוב."); }
           });
         }} />

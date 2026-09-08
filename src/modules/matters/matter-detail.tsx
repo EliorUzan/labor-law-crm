@@ -33,7 +33,7 @@ export function MatterDetailView({ data, today, work, documents }: { data: Matte
     </section>;
   };
   return <div className="space-y-5">
-    <Link className="text-sm text-teal-700 underline" href={`/clients/${client.id}`}><bdi>{client.name}</bdi></Link>
+    <nav aria-label="פירורי לחם" className="flex flex-wrap gap-1 text-sm text-stone-600"><Link className="text-teal-700 underline" href="/clients">לקוחות</Link><span aria-hidden>›</span><Link className="text-teal-700 underline" href={`/clients/${client.id}`}><bdi>{client.name}</bdi></Link><span aria-hidden>›</span><span className="break-words" dir="auto">{matter.title}</span></nav>
     <header className="flex flex-wrap items-center justify-between gap-3">
       <h1 className="min-w-0 break-words text-3xl font-bold" dir="auto">{matter.title}</h1>
       <Link className={buttonClass} href={`/matters/${matter.id}/edit`}>עריכה</Link>

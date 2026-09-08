@@ -17,7 +17,7 @@ function Feedback({ state }: { state: MatterFormState }) {
   </div>;
 }
 
-export function MatterForm({ clientId, matterId, initial }: { clientId: string; matterId?: string; initial?: InitialMatter }) {
+export function MatterForm({ clientId, matterId, initial, minimal = false }: { clientId: string; matterId?: string; initial?: InitialMatter; minimal?: boolean }) {
   const [state, action, pending] = useActionState(matterId ? updateMatter.bind(null, matterId) : createMatter.bind(null, clientId), initialState);
   const value = (field: keyof MatterFields) => state.values?.[field] ?? initial?.[field] ?? "";
   const textField = (field: keyof MatterFields, label: string, max: number, type = "text") => <label>{label}
@@ -27,7 +27,7 @@ export function MatterForm({ clientId, matterId, initial }: { clientId: string; 
   return <form action={action} className="space-y-5" noValidate>
     <fieldset disabled={pending} className="grid min-w-0 gap-4 sm:grid-cols-2">
       <label className="sm:col-span-2">כותרת (חובה)<input className={inputClass} name="title" required maxLength={300} defaultValue={value("title")} dir="auto" /></label>
-      {textField("caseType", "סוג תיק", 200)}
+      {!minimal && <>{textField("caseType", "סוג תיק", 200)}
       <label>סטטוס<select className={inputClass} name="status" defaultValue={status}>
         <option value="">ללא סטטוס</option>
         {status && !Object.hasOwn(matterStatusLabels, status) && <option value={status} disabled>{status} — יש לבחור סטטוס</option>}
@@ -36,15 +36,15 @@ export function MatterForm({ clientId, matterId, initial }: { clientId: string; 
       <label>תאריך פתיחה<input className={inputClass} type="date" name="openDate" defaultValue={value("openDate")} dir="ltr" /></label>
       {textField("caseNumber", "מספר תיק", 200)}
       {textField("courtOrTribunal", "בית דין / ערכאה", 300)}
-      {textField("opposingParty", "צד שכנגד", 500)}
+      {textField("opposingParty", "צד שכנגד", 500)}</>}
     </fieldset>
-    <fieldset disabled={pending} className="grid min-w-0 gap-4 sm:grid-cols-2">
+    {!minimal && <fieldset disabled={pending} className="grid min-w-0 gap-4 sm:grid-cols-2">
       <legend className="mb-3 font-semibold">עורך דין בצד שכנגד</legend>
       {textField("opposingAttorneyName", "שם", 200)}
       {textField("opposingAttorneyPhone", "טלפון", 50, "tel")}
       {textField("opposingAttorneyEmail", "דוא״ל", 254, "email")}
       {textField("opposingAttorneyFirm", "משרד", 300)}
-    </fieldset>
+    </fieldset>}
     <Feedback state={state} />
     <div className="flex items-center gap-4"><button className={buttonClass} disabled={pending}>{pending ? "שומר…" : "שמור"}</button>
       <Link className="text-sm text-stone-600 underline" href={matterId ? `/matters/${matterId}` : `/clients/${clientId}`}>ביטול</Link></div>

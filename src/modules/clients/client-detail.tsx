@@ -37,7 +37,7 @@ export function ClientDetailView({ data, today, trustBalance }: { data: ClientDe
   </li>)}</ul>;
 
   return <div className="space-y-5">
-    <Link className="text-sm text-teal-700 underline" href="/clients">לקוחות</Link>
+    <nav aria-label="פירורי לחם" className="flex flex-wrap gap-1 text-sm text-stone-600"><Link className="text-teal-700 underline" href="/clients">לקוחות</Link><span aria-hidden>›</span><span className="break-words" dir="auto">{client.name}</span></nav>
     <header className="flex flex-wrap items-center justify-between gap-3">
       <h1 className="min-w-0 break-words text-3xl font-bold">{client.name}</h1>
       <Link className={buttonClass} href={`/clients/${client.id}/edit`}>עריכה</Link>

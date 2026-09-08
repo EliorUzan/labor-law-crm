@@ -56,6 +56,25 @@ function LogoutButton() {
   );
 }
 
+function GlobalSearch({ compact = false }: { compact?: boolean }) {
+  return <form action="/search" className={compact ? "w-full" : "mt-6"} role="search">
+    <label className="sr-only" htmlFor={compact ? "mobile-global-search" : "global-search"}>חיפוש במערכת</label>
+    <input
+      className="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+      dir="auto"
+      id={compact ? "mobile-global-search" : "global-search"}
+      maxLength={200}
+      name="q"
+      placeholder="חיפוש…"
+      type="search"
+    />
+  </form>;
+}
+
+function QuickAddLink() {
+  return <Link className="inline-flex min-h-10 items-center justify-center rounded-lg bg-teal-700 px-3 text-sm font-medium text-white transition hover:bg-teal-800" href="/quick-add">+ חדש</Link>;
+}
+
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <div className="min-h-screen bg-stone-50 lg:flex lg:flex-row-reverse">
@@ -63,6 +82,8 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
         <div>
           <p className="text-sm font-semibold text-teal-700">ניהול משרד</p>
           <p className="mt-1 text-sm text-stone-500">דיני עבודה</p>
+          <GlobalSearch />
+          <div className="mt-3"><QuickAddLink /></div>
         </div>
         <Navigation />
         <div className="mt-auto border-t border-stone-200 pt-4">
@@ -77,10 +98,9 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
               <p className="text-sm font-semibold text-teal-700">ניהול משרד</p>
               <p className="text-xs text-stone-500">דיני עבודה</p>
             </div>
-            <div className="w-24">
-              <LogoutButton />
-            </div>
+            <div className="flex items-center gap-2"><QuickAddLink /><div className="w-24"><LogoutButton /></div></div>
           </div>
+          <div className="px-3 pb-3"><GlobalSearch compact /></div>
           <div className="border-t border-stone-100 px-3 pb-2">
             <Navigation compact />
           </div>
