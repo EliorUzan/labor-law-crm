@@ -128,3 +128,24 @@ See `docs/DEADLINE_PAIRING.md` for verification and exact local acceptance steps
 No V1 schema is planned for teams, roles, organizations, leads, pipelines,
 generic entities/relations, inbox/email synchronization, AI suggestions, file
 blobs, OCR, cloud-provider sync tokens, client portals, or bookkeeping/invoices.
+
+## Thread 6 Documents and Accounting
+
+V1 Document References are metadata and location references only. They are shown
+newest first on their owned Matter and only ordinary HTTPS references are offered
+as browser links; local paths remain text. Accounting Records remain separate
+office-level records, ordered newest first by their date. Their optional amount
+uses the existing exact `numeric(14,2)` storage and is displayed in Israeli
+shekels. See `docs/DOCUMENTS_ACCOUNTING.md` for the implemented UI and security
+rules.
+
+## Thread 6 follow-up — Financial control
+
+`financial_records` remains authoritative for Client balance and Client payment
+income. New explicit owner-scoped tables are `manual_income`, `office_expenses`,
+`trust_transactions`, `tax_payments`, `accounting_liabilities`, and
+`accounting_obligations`. Trust transactions require an owned Client and an
+optional Matter belonging to that Client. They never affect revenue or Client
+balances. Open/paid liabilities retain history; a linked Tax/VAT payment marks
+an open liability paid. Legacy `accounting_records` are retained and never
+silently classified or deleted.

@@ -32,6 +32,7 @@ function Metadata({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
+  const accountingObligations = data.accountingObligations ?? [];
   return (
     <div className="space-y-6">
       <header>
@@ -126,6 +127,13 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
               ))}
             </ul>
           )}
+        </DashboardSection>
+
+        <DashboardSection title="התחייבויות הנהלת חשבונות">
+          {accountingObligations.length === 0 ? <EmptyState>אין התחייבויות הנהלת חשבונות פתוחות</EmptyState> : <ul className="divide-y divide-stone-100">{accountingObligations.map((obligation) => <li className="py-3 first:pt-0 last:pb-0" key={obligation.id}>
+            <Link className="font-medium text-stone-900 hover:text-teal-700 hover:underline" href="/accounting">{obligation.title}</Link>
+            {(obligation.dueDate || obligation.type) && <Metadata>{[obligation.dueDate && `עד ${formatIsraeliDate(obligation.dueDate)}`, obligation.type].filter(Boolean).join(" · ")}</Metadata>}
+          </li>)}</ul>}
         </DashboardSection>
 
         <DashboardSection title="תיקים אחרונים">

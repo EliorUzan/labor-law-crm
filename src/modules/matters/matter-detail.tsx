@@ -6,7 +6,7 @@ import { HistoryForm, MatterNoteForm } from "./forms";
 import { matterStatusLabel } from "./presentation";
 import type { MatterDetail } from "./queries";
 
-export function MatterDetailView({ data, today, work }: { data: MatterDetail; today: string; work?: ReactNode }) {
+export function MatterDetailView({ data, today, work, documents }: { data: MatterDetail; today: string; work?: ReactNode; documents?: ReactNode }) {
   const { matter, client, history, notes } = data;
   const details = [
     { label: "סטטוס", value: matterStatusLabel(matter.status) },
@@ -41,6 +41,7 @@ export function MatterDetailView({ data, today, work }: { data: MatterDetail; to
     {fields("פרטי תיק", details)}
     {fields("עורך דין בצד שכנגד", attorney)}
     {work}
+    {documents}
     <section className={panelClass} id="notes">
       <h2 className="text-lg font-bold">הערות</h2>
       <details className="mt-4 rounded-lg border border-stone-200 p-3"><summary className="cursor-pointer font-medium text-teal-800">+ הוסף הערה</summary>

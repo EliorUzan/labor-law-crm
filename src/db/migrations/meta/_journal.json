@@ -29,6 +29,13 @@
       "when": 1788865000000,
       "tag": "0003_optional_obligation_deadline",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788866000000,
+      "tag": "0004_accounting_financial_control",
+      "breakpoints": true
     }
   ]
 }

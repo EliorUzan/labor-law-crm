@@ -6,7 +6,7 @@ import { clientStatusLabels, financialTypeLabels, panelClass, buttonClass } from
 import type { ClientDetail } from "./queries";
 import { matterStatusLabel } from "@/modules/matters/presentation";
 
-export function ClientDetailView({ data, today }: { data: ClientDetail; today: string }) {
+export function ClientDetailView({ data, today, trustBalance }: { data: ClientDetail; today: string; trustBalance?: string }) {
   const { client, matters, records, obligations, financialSummary } = data;
   const open = obligations.filter((obligation) => !obligation.done);
   const completed = obligations.filter((obligation) => obligation.done);
@@ -71,6 +71,11 @@ export function ClientDetailView({ data, today }: { data: ClientDetail; today: s
         </div><bdi className="font-semibold" dir="ltr">{formatIsraeliShekels(record.amount)}</bdi>
       </li>)}</ul> : <p className="mt-2 text-sm text-stone-500">אין רשומות כספיות ללקוח זה.</p>}
     </section>
+    {trustBalance && trustBalance !== "0" && <section className={panelClass} id="trust-money">
+      <h2 className="text-lg font-bold">כספי נאמנות</h2>
+      <p className="mt-2 text-sm text-stone-600">יתרה זו נפרדת מחיובי הלקוח ומהכנסות המשרד.</p>
+      <p className="mt-1 text-xl font-bold" dir="ltr">{formatIsraeliShekels(trustBalance)}</p>
+    </section>}
 
     <section className={panelClass} id="obligations">
       <h2 className="text-lg font-bold">התחייבויות פתוחות <span className="text-sm font-normal text-stone-500">({open.length})</span></h2>

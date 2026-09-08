@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { clientObligations, deadlines } from "@/db/schema";
 
-const migration = readFileSync(new URL("./0003_optional_obligation_deadline.sql", import.meta.url), "utf8");
+const migration = readFileSync("src/db/migrations/0003_optional_obligation_deadline.sql", "utf8");
 
 describe("optional obligation Deadline migration", () => {
   it("allows an owned Deadline without a separately selected Matter", () => {

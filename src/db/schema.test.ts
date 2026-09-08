@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   accountingRecords,
+  accountingLiabilities,
+  accountingObligations,
   clientObligations,
   clients,
   deadlines,
@@ -9,8 +11,12 @@ import {
   financialRecords,
   importantDates,
   matterHistory,
+  manualIncome,
   matters,
   tasks,
+  taxPayments,
+  trustTransactions,
+  officeExpenses,
 } from "./schema";
 
 describe("V1 schema", () => {
@@ -26,6 +32,12 @@ describe("V1 schema", () => {
       importantDates,
       documentReferences,
       accountingRecords,
+      manualIncome,
+      officeExpenses,
+      trustTransactions,
+      taxPayments,
+      accountingLiabilities,
+      accountingObligations,
     ];
 
     for (const table of tables) {

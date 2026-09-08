@@ -314,7 +314,13 @@ Purpose:
 
 Do **not** build a full Israeli bookkeeping / invoicing platform in V1.
 
-Keep this module modest and organizational.
+Accounting is a modest monthly financial-control module, not formal bookkeeping.
+Client payments automatically contribute received income in their payment month;
+Client charges contribute only to receivables. Client balance uses the same
+financial records throughout the CRM. Trust Money is Client-linked but separate
+from revenue and Client balance. The module also tracks manual income, expenses,
+tax/VAT payments, recorded tax/VAT liabilities, and simple Accounting
+Obligations.
 
 ---
 

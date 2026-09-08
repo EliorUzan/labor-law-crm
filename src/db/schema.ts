@@ -20,6 +20,10 @@ export const financialRecordType = pgEnum("financial_record_type", [
   "charge",
   "payment",
 ]);
+export const trustTransactionType = pgEnum("trust_transaction_type", ["receipt", "release"]);
+export const taxPaymentKind = pgEnum("tax_payment_kind", ["tax", "vat"]);
+export const accountingLiabilityType = pgEnum("accounting_liability_type", ["tax", "vat"]);
+export const accountingLiabilityStatus = pgEnum("accounting_liability_status", ["open", "paid"]);
 
 function timestamps() {
   return {
@@ -321,5 +325,131 @@ export const accountingRecords = pgTable(
   },
   (table) => [
     index("accounting_records_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate),
+  ],
+);
+
+export const manualIncome = pgTable(
+  "manual_income",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    ownerUserId: uuid("owner_user_id").notNull(),
+    recordDate: date("record_date").notNull(),
+    description: text("description").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    notes: text("notes"),
+    ...timestamps(),
+  },
+  (table) => [index("manual_income_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate)],
+);
+
+export const officeExpenses = pgTable(
+  "office_expenses",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    ownerUserId: uuid("owner_user_id").notNull(),
+    recordDate: date("record_date").notNull(),
+    description: text("description").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    category: text("category"),
+    documentLink: text("document_link"),
+    notes: text("notes"),
+    ...timestamps(),
+  },
+  (table) => [index("office_expenses_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate)],
+);
+
+export const trustTransactions = pgTable(
+  "trust_transactions",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    ownerUserId: uuid("owner_user_id").notNull(),
+    clientId: uuid("client_id").notNull(),
+    matterId: uuid("matter_id"),
+    transactionType: trustTransactionType("transaction_type").notNull(),
+    recordDate: date("record_date").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    description: text("description"),
+    documentLink: text("document_link"),
+    ...timestamps(),
+  },
+  (table) => [
+    foreignKey({
+      name: "trust_transactions_owner_user_id_client_id_clients_owner_user_id_id_fk",
+      columns: [table.ownerUserId, table.clientId],
+      foreignColumns: [clients.ownerUserId, clients.id],
+    }).onDelete("restrict"),
+    foreignKey({
+      name: "trust_transactions_owner_user_id_client_id_matter_id_matters_fk",
+      columns: [table.ownerUserId, table.clientId, table.matterId],
+      foreignColumns: [matters.ownerUserId, matters.clientId, matters.id],
+    }).onDelete("restrict"),
+    index("trust_transactions_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate),
+    index("trust_transactions_owner_user_id_client_id_idx").on(table.ownerUserId, table.clientId),
+  ],
+);
+
+export const accountingLiabilities = pgTable(
+  "accounting_liabilities",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    ownerUserId: uuid("owner_user_id").notNull(),
+    liabilityType: accountingLiabilityType("liability_type").notNull(),
+    status: accountingLiabilityStatus("status").notNull().default("open"),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    dueDate: date("due_date"),
+    period: text("period"),
+    description: text("description"),
+    notes: text("notes"),
+    ...timestamps(),
+  },
+  (table) => [
+    unique("accounting_liabilities_owner_user_id_id_unique").on(table.ownerUserId, table.id),
+    index("accounting_liabilities_owner_user_id_status_idx").on(table.ownerUserId, table.status),
+  ],
+);
+
+export const taxPayments = pgTable(
+  "tax_payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    ownerUserId: uuid("owner_user_id").notNull(),
+    paymentKind: taxPaymentKind("payment_kind").notNull(),
+    taxType: text("tax_type"),
+    liabilityId: uuid("liability_id"),
+    recordDate: date("record_date").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    period: text("period"),
+    description: text("description"),
+    documentLink: text("document_link"),
+    notes: text("notes"),
+    ...timestamps(),
+  },
+  (table) => [
+    foreignKey({
+      name: "tax_payments_owner_user_id_liability_id_accounting_liabilities_fk",
+      columns: [table.ownerUserId, table.liabilityId],
+      foreignColumns: [accountingLiabilities.ownerUserId, accountingLiabilities.id],
+    }).onDelete("restrict"),
+    index("tax_payments_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate),
+    index("tax_payments_owner_user_id_liability_id_idx").on(table.ownerUserId, table.liabilityId),
+  ],
+);
+
+export const accountingObligations = pgTable(
+  "accounting_obligations",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    ownerUserId: uuid("owner_user_id").notNull(),
+    title: text("title").notNull(),
+    done: boolean("done").notNull().default(false),
+    dueDate: date("due_date"),
+    type: text("type"),
+    period: text("period"),
+    amount: numeric("amount", { precision: 14, scale: 2 }),
+    description: text("description"),
+    ...timestamps(),
+  },
+  (table) => [
+    index("accounting_obligations_owner_user_id_done_due_date_idx").on(table.ownerUserId, table.done, table.dueDate),
   ],
 );

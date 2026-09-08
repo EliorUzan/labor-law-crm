@@ -899,38 +899,25 @@ Accounting should exist as a top-level section alongside Clients.
 
 ---
 
-## ACC-002 — Purpose
+## ACC-002 — Monthly financial-control view
 
-Accounting is intended for organizing law-office administrative/accounting information such as:
-- tax-related files;
-- expenses;
-- accounting documents/references;
-- payment/accounting notes;
-- document links.
+Accounting is a selected-month cash/control view: Client payments received plus
+manual income, expenses, tax/VAT payments, open tax/VAT liabilities, receivables,
+Trust Money, and simple Accounting Obligations. It is not a bookkeeping,
+invoicing, VAT-filing, payroll, reconciliation, or tax-return system.
 
----
+Client `financial_records` remain the only source of truth for Client charges,
+payments, and balance. A Client payment is received Accounting income in its
+payment month; a charge increases receivables but never received income. Trust
+Money is separate from both revenue and Client balance.
 
-## ACC-003 — Not a bookkeeping engine
+## ACC-003 — Explicit records
 
-Do not build a full Israeli accounting, invoicing, VAT, or tax-reporting platform.
-
-The CRM may organize references and lightweight records.
-
-External accounting software can remain authoritative where appropriate.
-
----
-
-## ACC-004 — Basic Accounting record
-
-A simple record may contain:
-- type;
-- date;
-- description;
-- amount — optional depending on type;
-- document/link — optional;
-- notes — optional.
-
-Exact fields should be refined when implementing the module.
+V1 stores separate manual-income, office-expense, Trust transaction, tax/VAT
+payment, tax/VAT liability, and Accounting Obligation records. Exact numeric
+amounts and date-only transaction dates are required where applicable. Existing
+generic Accounting records are preserved as legacy history without automatic
+reclassification.
 
 ---
 

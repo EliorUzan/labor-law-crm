@@ -5,6 +5,7 @@ import { aliasedTable, and, asc, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { createDatabaseClient } from "@/db/client";
 import {
   clientObligations,
+  accountingObligations,
   clients,
   deadlines,
   importantDates,
@@ -42,6 +43,7 @@ export type DashboardData = {
     deadlineAt: Date | null;
     dueDate: string | null;
   }>;
+  accountingObligations?: Array<{ id: string; title: string; dueDate: string | null; type: string | null }>;
   recentMatters: Array<{ id: string; title: string; clientName: string; status: string | null }>;
   financialSummary: { outstandingAmount: string; paymentsReceivedThisMonth: string };
 };
@@ -61,7 +63,7 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
     .where(and(eq(deadlines.ownerUserId, ownerUserId), overdue ? lt(deadlines.deadlineAt, generatedAt) : gte(deadlines.deadlineAt, generatedAt)))
     .orderBy(asc(deadlines.deadlineAt), asc(deadlines.id))
     .limit(DASHBOARD_LIST_LIMIT);
-  const [overdueRows, upcomingRows, taskRows, importantDateRows, obligationRows, recentMatterRows, financialSummary] =
+  const [overdueRows, upcomingRows, taskRows, importantDateRows, obligationRows, accountingObligationRows, recentMatterRows, financialSummary] =
     await Promise.all([
       deadlineQuery(true),
       deadlineQuery(false),
@@ -136,6 +138,12 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
         .orderBy(asc(clientObligations.dueDate), desc(clientObligations.createdAt))
         .limit(DASHBOARD_LIST_LIMIT),
       database
+        .select({ id: accountingObligations.id, title: accountingObligations.title, dueDate: accountingObligations.dueDate, type: accountingObligations.type })
+        .from(accountingObligations)
+        .where(and(eq(accountingObligations.ownerUserId, ownerUserId), eq(accountingObligations.done, false)))
+        .orderBy(asc(accountingObligations.dueDate), desc(accountingObligations.createdAt), asc(accountingObligations.id))
+        .limit(DASHBOARD_LIST_LIMIT),
+      database
         .select({ id: matters.id, title: matters.title, clientName: clients.name, status: matters.status })
         .from(matters)
         .innerJoin(
@@ -157,6 +165,7 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
     tasks: orderTasksByDeadline(taskRows),
     importantDates: importantDateRows,
     obligations: obligationRows,
+    accountingObligations: accountingObligationRows,
     recentMatters: recentMatterRows,
     financialSummary,
   };
