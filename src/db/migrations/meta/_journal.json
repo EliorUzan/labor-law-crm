@@ -15,6 +15,20 @@
       "when": 1788857051891,
       "tag": "0001_moaning_doomsday",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788861733805,
+      "tag": "0002_obligation_deadline_pairing",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788865000000,
+      "tag": "0003_optional_obligation_deadline",
+      "breakpoints": true
     }
   ]
 }

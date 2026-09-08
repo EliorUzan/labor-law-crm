@@ -1,11 +1,12 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { panelClass, buttonClass } from "@/modules/clients/presentation";
 import { formatIsraeliDate, formatIsraeliDateTime } from "@/modules/dashboard/format";
 import { HistoryForm, MatterNoteForm } from "./forms";
 import { matterStatusLabel } from "./presentation";
 import type { MatterDetail } from "./queries";
 
-export function MatterDetailView({ data, today }: { data: MatterDetail; today: string }) {
+export function MatterDetailView({ data, today, work }: { data: MatterDetail; today: string; work?: ReactNode }) {
   const { matter, client, history, notes } = data;
   const details = [
     { label: "סטטוס", value: matterStatusLabel(matter.status) },
@@ -39,6 +40,7 @@ export function MatterDetailView({ data, today }: { data: MatterDetail; today: s
     </header>
     {fields("פרטי תיק", details)}
     {fields("עורך דין בצד שכנגד", attorney)}
+    {work}
     <section className={panelClass} id="notes">
       <h2 className="text-lg font-bold">הערות</h2>
       <details className="mt-4 rounded-lg border border-stone-200 p-3"><summary className="cursor-pointer font-medium text-teal-800">+ הוסף הערה</summary>

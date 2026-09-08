@@ -1,0 +1,5 @@
+ALTER TABLE "client_obligations" ADD COLUMN "deadline_id" uuid;--> statement-breakpoint
+ALTER TABLE "client_obligations" ADD CONSTRAINT "client_obligations_owner_matter_deadline_fk" FOREIGN KEY ("owner_user_id","matter_id","deadline_id") REFERENCES "public"."deadlines"("owner_user_id","matter_id","id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "client_obligations_owner_matter_deadline_idx" ON "client_obligations" USING btree ("owner_user_id","matter_id","deadline_id");--> statement-breakpoint
+ALTER TABLE "client_obligations" ADD CONSTRAINT "client_obligations_deadline_requires_matter" CHECK ("client_obligations"."deadline_id" is null or "client_obligations"."matter_id" is not null);--> statement-breakpoint
+ALTER TABLE "client_obligations" ADD CONSTRAINT "client_obligations_one_date_source" CHECK ("client_obligations"."deadline_id" is null or "client_obligations"."due_date" is null);

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { matterStatusLabel } from "@/modules/matters/presentation";
+import { importantDateTypeLabel } from "@/modules/work/presentation";
 import {
   formatIsraeliDate,
   formatIsraeliDateTime,
@@ -7,6 +8,7 @@ import {
 } from "./format";
 import type { ReactNode } from "react";
 import type { DashboardData } from "./queries";
+import { toJerusalemDate } from "@/modules/work/time";
 
 function DashboardSection({
   title,
@@ -38,19 +40,20 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
       </header>
 
       <DashboardSection className="border-teal-200" title="דדליינים">
+        <p className="mb-4 text-xs text-stone-500">עד 8 דדליינים באיחור ו־8 דדליינים קרובים. הרשימה המלאה נמצאת בכל תיק.</p>
         {data.deadlines.length === 0 ? (
           <EmptyState>אין דדליינים קרובים</EmptyState>
         ) : (
           <ul className="divide-y divide-stone-100">
             {data.deadlines.map((deadline) => (
-              <li className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0" key={`${deadline.matterTitle}-${deadline.title}`}>
+              <li className="flex flex-wrap items-start justify-between gap-4 py-3 first:pt-0 last:pb-0" key={deadline.id}>
                 <div className="min-w-0">
-                  <p className="font-medium text-stone-900">{deadline.title}</p>
+                  <Link className="break-words font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/matters/${deadline.matterId}#deadlines`}><bdi>{deadline.title}</bdi></Link>
                   <Metadata>{deadline.matterTitle}</Metadata>
                 </div>
                 <div className="shrink-0 text-left">
                   <p className="text-sm font-medium text-stone-700" dir="ltr">
-                    {formatIsraeliDateTime(deadline.deadlineAt)}
+                    {formatIsraeliDate(toJerusalemDate(deadline.deadlineAt))}
                   </p>
                   {deadline.isOverdue ? (
                     <span className="mt-1 inline-block rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
@@ -71,12 +74,12 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
           ) : (
             <ul className="divide-y divide-stone-100">
               {data.tasks.map((task) => (
-                <li className="py-3 first:pt-0 last:pb-0" key={`${task.matterTitle}-${task.title}`}>
-                  <p className="font-medium text-stone-900">{task.title}</p>
+                <li className="py-3 first:pt-0 last:pb-0" key={task.id}>
+                  <Link className="break-words font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/matters/${task.matterId}#tasks`}><bdi>{task.title}</bdi></Link>
                   <Metadata>
                     {task.matterTitle}
                     {task.deadlineTitle && task.deadlineAt
-                      ? ` · דדליין: ${task.deadlineTitle} (${formatIsraeliDateTime(task.deadlineAt)})`
+                      ? ` · דדליין: ${task.deadlineTitle} (${formatIsraeliDate(toJerusalemDate(task.deadlineAt))})`
                       : ""}
                   </Metadata>
                 </li>
@@ -91,10 +94,10 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
           ) : (
             <ul className="divide-y divide-stone-100">
               {data.importantDates.map((event) => (
-                <li className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0" key={`${event.matterTitle}-${event.title}`}>
-                  <div>
-                    <p className="font-medium text-stone-900">{event.title}</p>
-                    <Metadata>{[event.matterTitle, event.type].filter(Boolean).join(" · ")}</Metadata>
+                <li className="flex flex-wrap items-start justify-between gap-4 py-3 first:pt-0 last:pb-0" key={event.id}>
+                  <div className="min-w-0">
+                    <Link className="break-words font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/matters/${event.matterId}#important-dates`}><bdi>{event.title}</bdi></Link>
+                    <Metadata>{[event.matterTitle, importantDateTypeLabel(event.type)].filter(Boolean).join(" · ")}</Metadata>
                   </div>
                   <p className="shrink-0 text-left text-sm text-stone-600" dir="ltr">
                     {formatIsraeliDateTime(event.eventAt)}
@@ -115,7 +118,9 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
                   <Link className="font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/clients/${obligation.clientId}#obligations`}>{obligation.title}</Link>
                   <Metadata>
                     {[obligation.clientName, obligation.matterTitle].filter(Boolean).join(" · ")}
-                    {obligation.dueDate ? ` · עד ${formatIsraeliDate(obligation.dueDate)}` : ""}
+                    {obligation.matterId && obligation.matterTitle && obligation.deadlineAt
+                      ? ` · דדליין: ${obligation.deadlineTitle} (${formatIsraeliDate(toJerusalemDate(obligation.deadlineAt))})`
+                      : obligation.dueDate ? ` · עד ${formatIsraeliDate(obligation.dueDate)}` : ""}
                   </Metadata>
                 </li>
               ))}

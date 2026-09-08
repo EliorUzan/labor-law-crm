@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, gte } from "drizzle-orm";
+import { aliasedTable, and, asc, desc, eq, gte, lt, sql } from "drizzle-orm";
 
 import { createDatabaseClient } from "@/db/client";
 import {
@@ -14,25 +14,32 @@ import {
 
 import { orderTasksByDeadline } from "./format";
 import { getFinancialSummary } from "@/modules/clients/financial-summary";
+import { isDeadlineOverdue } from "@/modules/work/time";
 
 const DASHBOARD_LIST_LIMIT = 8;
 
 export type DashboardData = {
   generatedAt: Date;
-  deadlines: Array<{ title: string; matterTitle: string; deadlineAt: Date; isOverdue: boolean }>;
+  deadlines: Array<{ id: string; matterId: string; title: string; matterTitle: string; deadlineAt: Date; isOverdue: boolean }>;
   tasks: Array<{
+    id: string;
+    matterId: string;
     title: string;
     matterTitle: string;
     deadlineTitle: string | null;
     deadlineAt: Date | null;
   }>;
-  importantDates: Array<{ title: string; matterTitle: string; eventAt: Date; type: string | null }>;
+  importantDates: Array<{ id: string; matterId: string; title: string; matterTitle: string; eventAt: Date; type: string | null }>;
   obligations: Array<{
     id: string;
     clientId: string;
     title: string;
     clientName: string;
+    matterId: string | null;
     matterTitle: string | null;
+    deadlineId: string | null;
+    deadlineTitle: string | null;
+    deadlineAt: Date | null;
     dueDate: string | null;
   }>;
   recentMatters: Array<{ id: string; title: string; clientName: string; status: string | null }>;
@@ -42,26 +49,26 @@ export type DashboardData = {
 /** Loads the small, owner-scoped read model needed by the dashboard. */
 export async function getDashboardData(ownerUserId: string): Promise<DashboardData> {
   const database = createDatabaseClient();
+  const deadlineMatter = aliasedTable(matters, "dashboard_deadline_matters");
   const generatedAt = new Date();
 
-  const [deadlineRows, taskRows, importantDateRows, obligationRows, recentMatterRows, financialSummary] =
+  // Separate limits keep historical deadlines from crowding out upcoming work.
+  const deadlineQuery = (overdue: boolean) => database
+    .select({ id: deadlines.id, matterId: matters.id, title: deadlines.title, matterTitle: matters.title, deadlineAt: deadlines.deadlineAt })
+    .from(deadlines)
+    .innerJoin(matters, and(eq(matters.id, deadlines.matterId), eq(matters.ownerUserId, ownerUserId)))
+    .innerJoin(clients, and(eq(clients.id, matters.clientId), eq(clients.ownerUserId, ownerUserId)))
+    .where(and(eq(deadlines.ownerUserId, ownerUserId), overdue ? lt(deadlines.deadlineAt, generatedAt) : gte(deadlines.deadlineAt, generatedAt)))
+    .orderBy(asc(deadlines.deadlineAt), asc(deadlines.id))
+    .limit(DASHBOARD_LIST_LIMIT);
+  const [overdueRows, upcomingRows, taskRows, importantDateRows, obligationRows, recentMatterRows, financialSummary] =
     await Promise.all([
+      deadlineQuery(true),
+      deadlineQuery(false),
       database
         .select({
-          title: deadlines.title,
-          matterTitle: matters.title,
-          deadlineAt: deadlines.deadlineAt,
-        })
-        .from(deadlines)
-        .innerJoin(
-          matters,
-          and(eq(matters.id, deadlines.matterId), eq(matters.ownerUserId, ownerUserId)),
-        )
-        .where(eq(deadlines.ownerUserId, ownerUserId))
-        .orderBy(asc(deadlines.deadlineAt))
-        .limit(DASHBOARD_LIST_LIMIT),
-      database
-        .select({
+          id: tasks.id,
+          matterId: matters.id,
           title: tasks.title,
           matterTitle: matters.title,
           deadlineTitle: deadlines.title,
@@ -72,15 +79,18 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
           matters,
           and(eq(matters.id, tasks.matterId), eq(matters.ownerUserId, ownerUserId)),
         )
+        .innerJoin(clients, and(eq(clients.id, matters.clientId), eq(clients.ownerUserId, ownerUserId)))
         .leftJoin(
           deadlines,
-          and(eq(deadlines.id, tasks.deadlineId), eq(deadlines.ownerUserId, ownerUserId)),
+          and(eq(deadlines.id, tasks.deadlineId), eq(deadlines.matterId, tasks.matterId), eq(deadlines.ownerUserId, ownerUserId)),
         )
         .where(and(eq(tasks.ownerUserId, ownerUserId), eq(tasks.done, false)))
-        .orderBy(asc(deadlines.deadlineAt), desc(tasks.createdAt))
+        .orderBy(sql`${deadlines.deadlineAt} asc nulls last`, desc(tasks.createdAt), asc(tasks.id))
         .limit(DASHBOARD_LIST_LIMIT),
       database
         .select({
+          id: importantDates.id,
+          matterId: matters.id,
           title: importantDates.title,
           matterTitle: matters.title,
           eventAt: importantDates.eventAt,
@@ -91,8 +101,9 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
           matters,
           and(eq(matters.id, importantDates.matterId), eq(matters.ownerUserId, ownerUserId)),
         )
+        .innerJoin(clients, and(eq(clients.id, matters.clientId), eq(clients.ownerUserId, ownerUserId)))
         .where(and(eq(importantDates.ownerUserId, ownerUserId), gte(importantDates.eventAt, generatedAt)))
-        .orderBy(asc(importantDates.eventAt))
+        .orderBy(asc(importantDates.eventAt), asc(importantDates.id))
         .limit(DASHBOARD_LIST_LIMIT),
       database
         .select({
@@ -100,7 +111,11 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
           clientId: clientObligations.clientId,
           title: clientObligations.title,
           clientName: clients.name,
-          matterTitle: matters.title,
+          matterId: sql<string | null>`coalesce(${clientObligations.matterId}, ${deadlineMatter.id})`,
+          matterTitle: sql<string | null>`coalesce(${matters.title}, ${deadlineMatter.title})`,
+          deadlineId: clientObligations.deadlineId,
+          deadlineTitle: deadlines.title,
+          deadlineAt: deadlines.deadlineAt,
           dueDate: clientObligations.dueDate,
         })
         .from(clientObligations)
@@ -113,8 +128,10 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
         )
         .leftJoin(
           matters,
-          and(eq(matters.id, clientObligations.matterId), eq(matters.ownerUserId, ownerUserId)),
+          and(eq(matters.id, clientObligations.matterId), eq(matters.clientId, clientObligations.clientId), eq(matters.ownerUserId, ownerUserId)),
         )
+        .leftJoin(deadlines, and(eq(deadlines.id, clientObligations.deadlineId), eq(deadlines.ownerUserId, ownerUserId)))
+        .leftJoin(deadlineMatter, and(eq(deadlineMatter.id, deadlines.matterId), eq(deadlineMatter.ownerUserId, ownerUserId), eq(deadlineMatter.clientId, clientObligations.clientId)))
         .where(and(eq(clientObligations.ownerUserId, ownerUserId), eq(clientObligations.done, false)))
         .orderBy(asc(clientObligations.dueDate), desc(clientObligations.createdAt))
         .limit(DASHBOARD_LIST_LIMIT),
@@ -133,9 +150,9 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
 
   return {
     generatedAt,
-    deadlines: deadlineRows.map((row) => ({
+    deadlines: [...overdueRows, ...upcomingRows].map((row) => ({
       ...row,
-      isOverdue: row.deadlineAt < generatedAt,
+      isOverdue: isDeadlineOverdue(row.deadlineAt, generatedAt),
     })),
     tasks: orderTasksByDeadline(taskRows),
     importantDates: importantDateRows,

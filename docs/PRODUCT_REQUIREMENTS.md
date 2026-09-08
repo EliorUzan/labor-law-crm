@@ -491,6 +491,22 @@ Each obligation must belong to a Client.
 
 It may optionally reference a Matter.
 
+Client Obligations remain Client-level entities. An Obligation may optionally
+reference one Deadline through `client_obligations.deadline_id`. The Deadline
+must belong to the same Client and authenticated owner, but the Obligation does
+not need its own Matter reference.
+
+Standalone obligations and obligations with only a Matter remain valid.
+Changing the selected Matter clears the Deadline selection; without a selected
+Matter, the form lists all of the Client's Deadlines. Removing pairing never
+deletes either entity. The Client page and Dashboard show the
+Matter context whenever a Deadline is attached and read its current date through
+the relationship. A Deadline may have multiple linked obligations.
+
+The existing optional independent obligation due date remains available when
+unpaired. Choosing a Deadline replaces that independent date (explained in the
+form); paired obligations never keep a competing or copied date.
+
 ---
 
 ## OBL-003 — Visibility
@@ -702,7 +718,14 @@ The normal interaction should allow fast completion/uncompletion.
 
 ## TASK-004 — Task deadline
 
-A Task may optionally reference or contain a deadline.
+Tasks and Deadlines are independent Matter-level entities. A Task may optionally
+reference one Deadline from the same Matter through nullable `tasks.deadline_id`.
+Multiple Tasks may share a Deadline; it does not require a Task. Pairing can be
+added, changed or removed without deleting records. The date is read from the
+Deadline, never copied into the Task; `deadlines.task_id` is not used.
+
+The Task form also offers direct Deadline creation. It creates the normal
+standalone Deadline with title and date (and no description) before linking it.
 
 However, standalone Matter Deadlines are a separate important concept and must remain separately visible.
 
@@ -763,6 +786,9 @@ Deadlines must be highly visible:
 The UI must visually distinguish Deadlines from ordinary Tasks.
 
 Legal deadlines should not be easy to overlook.
+
+Deadline entry requests a date first. A user may explicitly add a time; otherwise
+the stored time is 17:00 in Israel time and ordinary lists show the date.
 
 ---
 

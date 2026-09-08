@@ -38,10 +38,11 @@ export const financialRecordSchema = z.object({
 export const obligationSchema = z.object({
   clientId: recordIdSchema,
   matterId: optionalId,
+  deadlineId: optionalId,
   title: z.string().trim().min(1, "יש להזין כותרת להתחייבות.").max(300),
   description: optionalText(10000),
   dueDate: z.preprocess(emptyToNull, calendarDateSchema.nullable()),
-});
+}).transform((value) => ({ ...value, dueDate: value.deadlineId ? null : value.dueDate }));
 
 export const obligationCompletionSchema = z.object({
   clientId: recordIdSchema,

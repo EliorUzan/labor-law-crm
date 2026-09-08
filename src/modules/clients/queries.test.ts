@@ -45,7 +45,7 @@ describe("owner-scoped reads", () => {
   it("scopes every client child read and orders financial history by record date descending", async () => {
     execute.mockResolvedValueOnce({ rows: [[clientId]] });
     await getClientDetail(owner, clientId);
-    expect(execute).toHaveBeenCalledTimes(5);
+    expect(execute).toHaveBeenCalledTimes(6);
     for (const [sql, params] of execute.mock.calls) {
       expect(sql).toContain('"owner_user_id" =');
       expect(params).toContain(owner);
@@ -68,11 +68,15 @@ describe("shared Dashboard aggregation", () => {
   });
   it("uses the shared totals, owner-scoped joins, and only open obligations on the Dashboard", async () => {
     await getDashboardData(owner);
-    expect(execute).toHaveBeenCalledTimes(6);
+    expect(execute).toHaveBeenCalledTimes(7);
     for (const [, params] of execute.mock.calls) expect(params).toContain(owner);
     const [sql, params] = execute.mock.calls.find(([sql]) => sql.includes('from "client_obligations"'))!;
     expect(sql).toContain('"client_obligations"."done" =');
     expect(sql).toContain('"clients"."owner_user_id" =');
+    expect(sql).toContain('"matters"."client_id" = "client_obligations"."client_id"');
+    expect(sql).toContain('"dashboard_deadline_matters"."client_id" = "client_obligations"."client_id"');
+    expect(sql).toContain('"deadlines"."matter_id" = "dashboard_deadline_matters"."id"');
+    expect(sql).toContain('"deadlines"."owner_user_id" =');
     expect(params).toContain(false);
     expect(execute.mock.calls.filter(([sql]) => sql.includes('from "financial_records"'))).toHaveLength(1);
   });

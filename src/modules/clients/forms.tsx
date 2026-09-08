@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useId } from "react";
-import { createClient, updateClient, addFinancialRecord, addObligation, setObligationCompletion, type ClientFormState } from "./actions";
+import { startTransition, useActionState, useId, useState } from "react";
+import { createClient, updateClient, addFinancialRecord, addObligation, updateObligation, setObligationCompletion, type ClientFormState } from "./actions";
 import { buttonClass, inputClass, clientStatusLabels, financialTypeLabels } from "./presentation";
 
 type ClientFields = { name: string; phone: string | null; email: string | null; address: string | null; notes: string | null; status: keyof typeof clientStatusLabels | null };
@@ -64,14 +64,72 @@ export function FinancialRecordForm({ clientId, matters, today }: { clientId: st
   </form>;
 }
 
-export function ObligationForm({ clientId, matters }: { clientId: string; matters: MatterOption[] }) {
-  const [state, action, pending] = useActionState(addObligation.bind(null, clientId), initialState);
-  return <form action={action} className="mt-4 space-y-3" noValidate>
-    <fieldset disabled={pending} className="grid min-w-0 gap-3 sm:grid-cols-2">
-      <label className="sm:col-span-2">כותרת (חובה)<input className={inputClass} name="title" required maxLength={300} dir="auto" defaultValue={state.values?.title ?? ""} /></label>
-      <label>תאריך יעד (אופציונלי)<input className={inputClass} name="dueDate" type="date" dir="ltr" defaultValue={state.values?.dueDate ?? ""} /></label>
-      <MatterSelect matters={matters} value={state.values?.matterId} />
-      <label className="sm:col-span-2">תיאור (אופציונלי)<textarea className={inputClass} name="description" rows={2} maxLength={10000} dir="auto" defaultValue={state.values?.description ?? ""} /></label>
+export function ObligationForm({ clientId, matters, deadlines = [], obligationId, initial }: {
+  clientId: string; matters: MatterOption[]; deadlines?: { id: string; matterId: string; label: string }[];
+  obligationId?: string; initial?: { title: string; description: string | null; matterId: string | null; deadlineId: string | null; dueDate: string | null };
+}) {
+  const [matterId, setMatterId] = useState(initial?.matterId ?? "");
+  const [deadlineId, setDeadlineId] = useState(initial?.deadlineId ?? "");
+  const [dueDate, setDueDate] = useState(initial?.dueDate ?? "");
+  const [createDeadline, setCreateDeadline] = useState(false);
+  const [newDeadlineMatterId, setNewDeadlineMatterId] = useState(initial?.matterId ?? "");
+  const [showNewDeadlineTime, setShowNewDeadlineTime] = useState(false);
+  const [formVersion, setFormVersion] = useState(0);
+  const save = obligationId ? updateObligation.bind(null, clientId, obligationId) : addObligation.bind(null, clientId);
+  const [state, action, pending] = useActionState(async (previous: ClientFormState, formData: FormData) => {
+    const result = await save(previous, formData);
+    if (result.success && !obligationId) { setMatterId(""); setDeadlineId(""); setDueDate(""); setFormVersion((version) => version + 1); }
+    return result;
+  }, initialState);
+  // Dispatch explicitly: dependent selectors must survive a returned validation
+  // error. Reset a new form only after the server confirms a successful save.
+  return <form method="post" onSubmit={(event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => action(formData));
+  }} className="mt-4 space-y-3" noValidate>
+    <fieldset key={formVersion} disabled={pending} className="grid min-w-0 gap-3 sm:grid-cols-2">
+      <legend className="mb-3 font-semibold">{obligationId ? "עריכת התחייבות" : "התחייבות חדשה"}</legend>
+      <label className="sm:col-span-2">כותרת (חובה)<input className={inputClass} name="title" required maxLength={300} dir="auto" defaultValue={state.values?.title ?? initial?.title ?? ""} /></label>
+      {matters.length > 0 && <label>תיק (אופציונלי)<select name="matterId" className={inputClass} value={matterId}
+        onChange={(event) => { setMatterId(event.target.value); setDeadlineId(""); }}>
+        <option value="">ללא תיק</option>
+        {matters.map((matter) => <option key={matter.id} value={matter.id}>{matter.title}</option>)}
+      </select></label>}
+      <label>דדליין (אופציונלי)<select name="deadlineId" className={inputClass} disabled={createDeadline} value={deadlineId}
+        onChange={(event) => { setDeadlineId(event.target.value); if (event.target.value) setDueDate(""); }}>
+        <option value="">ללא דדליין</option>
+        {deadlines.filter((deadline) => !matterId || deadline.matterId === matterId).map((deadline) => <option key={deadline.id} value={deadline.id}>{deadline.label}</option>)}
+      </select></label>
+      <div className="sm:col-span-2">
+        <button type="button" className="text-sm font-medium text-teal-800 underline" onClick={() => {
+          setCreateDeadline((open) => !open); setDueDate("");
+        }}>
+          {createDeadline ? "בחירת דדליין קיים" : "+ יצירת דדליין חדש"}
+        </button>
+      </div>
+      {createDeadline && <>
+        <input type="hidden" name="createDeadline" value="true" />
+        <label>תיק לדדליין (חובה)<select name="newDeadlineMatterId" className={inputClass} required value={newDeadlineMatterId}
+          onChange={(event) => setNewDeadlineMatterId(event.target.value)}>
+          <option value="">בחירת תיק</option>
+          {matters.map((matter) => <option key={matter.id} value={matter.id}>{matter.title}</option>)}
+        </select></label>
+        <label>כותרת דדליין (חובה)<input className={inputClass} name="newDeadlineTitle" required maxLength={300} dir="auto" defaultValue={state.values?.newDeadlineTitle ?? ""} /></label>
+        <label>תאריך דדליין (חובה)<input className={inputClass} name="newDeadlineDate" type="date" required dir="ltr" defaultValue={state.values?.newDeadlineDate ?? ""} /></label>
+        <div className="self-end">
+          <button type="button" className="text-sm font-medium text-teal-800 underline" onClick={() => setShowNewDeadlineTime((shown) => !shown)}>
+            {showNewDeadlineTime ? "הסתרת שעה" : "+ הוספת שעה"}
+          </button>
+          {showNewDeadlineTime && <label className="mt-2 block">שעה — שעון ישראל (אופציונלי)
+            <input className={inputClass} name="newDeadlineTime" type="time" dir="ltr" defaultValue={state.values?.newDeadlineTime ?? ""} />
+          </label>}
+          {!showNewDeadlineTime && <p className="mt-1 text-xs text-stone-500">ללא שעה, הדדליין יוגדר ל־17:00.</p>}
+        </div>
+      </>}
+      {!deadlineId && !createDeadline && <label>תאריך יעד (אופציונלי)<input className={inputClass} name="dueDate" type="date" dir="ltr" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label>}
+      <p className="text-xs text-stone-500 sm:col-span-2">בחירת דדליין מחליפה את תאריך היעד העצמאי. התאריך יוצג מתוך הדדליין ויתעדכן יחד איתו.</p>
+      <label className="sm:col-span-2">תיאור (אופציונלי)<textarea className={inputClass} name="description" rows={2} maxLength={10000} dir="auto" defaultValue={state.values?.description ?? initial?.description ?? ""} /></label>
     </fieldset>
     <Feedback state={state} />
     <button className={buttonClass} disabled={pending}>{pending ? "שומר…" : "שמור התחייבות"}</button>

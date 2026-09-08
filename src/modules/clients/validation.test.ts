@@ -41,7 +41,7 @@ describe("exact financial input", () => {
 describe("obligation input", () => {
   it("requires only title and client, and does not accept workflow/completion on creation", () => {
     const result = obligationSchema.parse({ clientId, title: " לחזור ללקוח ", done: true, priority: "high" });
-    expect(result).toEqual({ clientId, title: "לחזור ללקוח", matterId: null, description: null, dueDate: null });
+    expect(result).toEqual({ clientId, title: "לחזור ללקוח", matterId: null, deadlineId: null, description: null, dueDate: null });
   });
   it("parses both completion states explicitly (false must not coerce to true)", () => {
     expect(obligationCompletionSchema.parse({ clientId, obligationId: clientId, done: "false" }).done).toBe(false);

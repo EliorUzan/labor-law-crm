@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   foreignKey,
   index,
@@ -111,6 +113,7 @@ export const clientObligations = pgTable(
     ownerUserId: uuid("owner_user_id").notNull(),
     clientId: uuid("client_id").notNull(),
     matterId: uuid("matter_id"),
+    deadlineId: uuid("deadline_id"),
     title: text("title").notNull(),
     description: text("description"),
     done: boolean("done").notNull().default(false),
@@ -128,6 +131,14 @@ export const clientObligations = pgTable(
       columns: [table.ownerUserId, table.clientId, table.matterId],
       foreignColumns: [matters.ownerUserId, matters.clientId, matters.id],
     }).onDelete("restrict"),
+    foreignKey({
+      name: "client_obligations_owner_deadline_fk",
+      columns: [table.ownerUserId, table.deadlineId],
+      foreignColumns: [deadlines.ownerUserId, deadlines.id],
+    }).onDelete("restrict"),
+    check("client_obligations_one_date_source",
+      sql`${table.deadlineId} is null or ${table.dueDate} is null`),
+    index("client_obligations_owner_deadline_idx").on(table.ownerUserId, table.deadlineId),
     index("client_obligations_owner_user_id_client_id_idx").on(table.ownerUserId, table.clientId),
     index("client_obligations_owner_user_id_done_due_date_idx").on(
       table.ownerUserId,
@@ -191,6 +202,7 @@ export const deadlines = pgTable(
       table.matterId,
       table.id,
     ),
+    unique("deadlines_owner_user_id_id_unique").on(table.ownerUserId, table.id),
     index("deadlines_owner_user_id_deadline_at_idx").on(table.ownerUserId, table.deadlineAt),
   ],
 );

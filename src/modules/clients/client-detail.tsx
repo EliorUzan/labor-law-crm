@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatIsraeliDate, formatIsraeliShekels } from "@/modules/dashboard/format";
+import { toJerusalemDate } from "@/modules/work/time";
 import { FinancialRecordForm, ObligationForm, ObligationCompletion } from "./forms";
 import { clientStatusLabels, financialTypeLabels, panelClass, buttonClass } from "./presentation";
 import type { ClientDetail } from "./queries";
@@ -10,6 +11,8 @@ export function ClientDetailView({ data, today }: { data: ClientDetail; today: s
   const open = obligations.filter((obligation) => !obligation.done);
   const completed = obligations.filter((obligation) => obligation.done);
   const matterNames = new Map(matters.map((matter) => [matter.id, matter.title]));
+  const deadlineOptions = data.deadlines.map((deadline) => ({ id: deadline.id, matterId: deadline.matterId,
+    label: `${formatIsraeliDate(toJerusalemDate(deadline.deadlineAt))} — ${deadline.title}` }));
   const contactFields = [
     { label: "טלפון", value: client.phone, ltr: true },
     { label: "דוא״ל", value: client.email, ltr: true },
@@ -17,13 +20,20 @@ export function ClientDetailView({ data, today }: { data: ClientDetail; today: s
     { label: "סטטוס", value: client.status ? clientStatusLabels[client.status] : null },
     { label: "הערות", value: client.notes },
   ].filter((field) => field.value);
-  const obligationList = (items: typeof obligations) => <ul className="divide-y divide-stone-100">{items.map((obligation) => <li className="py-3" key={obligation.id}>
+  const obligationList = (items: typeof obligations) => <ul className="divide-y divide-stone-100">{items.map((obligation) => <li className="py-3" key={obligation.id} id={`obligation-${obligation.id}`}>
     <ObligationCompletion clientId={client.id} obligationId={obligation.id} title={obligation.title} done={obligation.done} />
     {obligation.description && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-stone-600" dir="auto">{obligation.description}</p>}
-    {(obligation.dueDate || obligation.matterId) && <p className="mt-1 text-sm text-stone-500">
-      {obligation.dueDate && <span className={!obligation.done && obligation.dueDate < today ? "text-red-700" : ""}>עד {formatIsraeliDate(obligation.dueDate)}{!obligation.done && obligation.dueDate < today ? " · באיחור" : ""}</span>}
-      {obligation.matterId && <span className="ms-2">{matterNames.get(obligation.matterId)}</span>}
+    {(obligation.dueDate || obligation.matterId || obligation.deadlineMatterId) && <p className="mt-1 text-sm text-stone-500">
+      {!obligation.deadlineId && obligation.dueDate && <span className={!obligation.done && obligation.dueDate < today ? "text-red-700" : ""}>עד {formatIsraeliDate(obligation.dueDate)}{!obligation.done && obligation.dueDate < today ? " · באיחור" : ""}</span>}
+      {obligation.matterId && <span className="ms-2">תיק: <Link className="text-teal-700 underline" href={`/matters/${obligation.matterId}`}><bdi>{matterNames.get(obligation.matterId)}</bdi></Link></span>}
+      {!obligation.matterId && obligation.deadlineMatterId && <span className="ms-2">תיק הדדליין: <Link className="text-teal-700 underline" href={`/matters/${obligation.deadlineMatterId}`}><bdi>{obligation.deadlineMatterTitle}</bdi></Link></span>}
     </p>}
+    {obligation.deadlineMatterId && obligation.deadlineId && obligation.deadlineAt && <p className="mt-1 break-words text-sm text-teal-800">
+      <Link className="underline" href={`/matters/${obligation.deadlineMatterId}#deadline-${obligation.deadlineId}`}>דדליין: <bdi dir="ltr">{formatIsraeliDate(toJerusalemDate(obligation.deadlineAt))}</bdi> — <bdi>{obligation.deadlineTitle}</bdi></Link>
+    </p>}
+    <details className="mt-3"><summary className="cursor-pointer text-sm text-teal-700">עריכת התחייבות</summary>
+      <ObligationForm key={obligation.updatedAt.toISOString()} clientId={client.id} obligationId={obligation.id} initial={obligation} matters={matters} deadlines={deadlineOptions} />
+    </details>
   </li>)}</ul>;
 
   return <div className="space-y-5">
@@ -66,7 +76,7 @@ export function ClientDetailView({ data, today }: { data: ClientDetail; today: s
       <h2 className="text-lg font-bold">התחייבויות פתוחות <span className="text-sm font-normal text-stone-500">({open.length})</span></h2>
       {open.length ? obligationList(open) : <p className="mt-3 text-sm text-stone-500">אין התחייבויות פתוחות ללקוח זה.</p>}
       <details className="mt-4 rounded-lg border border-stone-200 p-3"><summary className="cursor-pointer font-medium text-teal-800">+ הוסף התחייבות</summary>
-        <ObligationForm clientId={client.id} matters={matters} />
+        <ObligationForm clientId={client.id} matters={matters} deadlines={deadlineOptions} />
       </details>
       {completed.length > 0 && <details className="mt-4"><summary className="cursor-pointer text-sm text-stone-500">התחייבויות שהושלמו ({completed.length})</summary>{obligationList(completed)}</details>}
     </section>

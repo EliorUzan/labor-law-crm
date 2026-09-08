@@ -9,12 +9,12 @@ import type { ClientFormState } from "./actions";
 
 const mock = vi.hoisted(() => ({ save: vi.fn() }));
 vi.mock("./actions", () => ({ createClient: mock.save, updateClient: mock.save, addFinancialRecord: mock.save,
-  addObligation: mock.save, setObligationCompletion: mock.save }));
+  addObligation: mock.save, updateObligation: mock.save, setObligationCompletion: mock.save }));
 const clientId = "22222222-2222-4222-8222-222222222222";
 const data: ClientDetail = {
   client: { id: clientId, ownerUserId: clientId, name: "ישראל ישראלי", phone: null, email: null, address: null, notes: null, status: null,
     createdAt: new Date(), updatedAt: new Date() },
-  matters: [], records: [], obligations: [],
+  matters: [], records: [], obligations: [], deadlines: [],
   financialSummary: { totalCharges: "0", totalPayments: "0", outstandingAmount: "0", paymentsReceivedThisMonth: "0" },
 };
 let container: HTMLDivElement;
@@ -51,7 +51,7 @@ describe("Client presentation", () => {
   it("keeps completed obligations collapsed and identifies a small credit", () => {
     container.innerHTML = renderToStaticMarkup(<ClientDetailView today="2026-09-08" data={{ ...data,
       financialSummary: { ...data.financialSummary, outstandingAmount: "-0.01" },
-      obligations: [{ id: clientId, title: "הושלמה", description: null, dueDate: null, done: true, matterId: null }],
+      obligations: [{ id: clientId, title: "הושלמה", description: null, dueDate: null, done: true, matterId: null, deadlineId: null, deadlineTitle: null, deadlineAt: null, deadlineMatterId: null, deadlineMatterTitle: null, updatedAt: new Date() }],
     }} />);
     const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
     expect(checkbox.checked).toBe(true);

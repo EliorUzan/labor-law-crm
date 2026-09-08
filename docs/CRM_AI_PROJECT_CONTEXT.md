@@ -145,6 +145,13 @@ Examples:
 
 Obligation belongs to a Client and may optionally reference a Matter.
 
+It may also optionally reference one Deadline from any Matter owned by that
+same Client and authenticated owner; selecting that Deadline does not require
+the Obligation itself to select a Matter. Multiple obligations can share one
+Deadline; unlinking never deletes records. Paired
+obligations read the Deadline's date instead of retaining an independent due
+date; unpaired obligations keep the existing optional due-date behavior.
+
 ---
 
 ## 6. Matter Model
@@ -217,9 +224,18 @@ Do **not** add unnecessary fields such as priority, assignee, category, workflow
 
 ### Deadline
 
+Tasks and Deadlines are independent Matter-level entities. A Task may optionally
+reference one Deadline from the same Matter using `tasks.deadline_id`. Multiple
+Tasks may share it; the date stays exclusively on the Deadline.
+
 Deadline is a standalone prominent entity/item under a Matter.
 
-A deadline may also be referenced by / associated with a Task.
+A deadline may also be referenced by / associated with a Task. The Task form
+can create a new standalone Deadline directly, with its required title and
+date, and link it immediately.
+
+Deadline forms request a date first. Time is optional behind an explicit button;
+an omitted time is stored as 17:00 in Israel time.
 
 Deadlines must be highly visible:
 - Matter page
