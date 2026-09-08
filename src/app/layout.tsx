@@ -5,6 +5,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ניהול משרד | דיני עבודה",
   description: "מערכת ניהול תיקים למשרד דיני עבודה",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

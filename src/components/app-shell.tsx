@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { logout } from "@/app/login/actions";
+import { FirmBrand } from "@/components/firm-brand";
 
 const navigationItems = [
   { href: "/", label: "לוח בקרה" },
@@ -80,8 +81,7 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
     <div className="min-h-screen bg-stone-50 lg:flex lg:flex-row-reverse">
       <aside className="hidden w-64 shrink-0 flex-col border-l border-stone-200 bg-white p-5 lg:flex">
         <div>
-          <p className="text-sm font-semibold text-teal-700">ניהול משרד</p>
-          <p className="mt-1 text-sm text-stone-500">דיני עבודה</p>
+          <FirmBrand />
           <GlobalSearch />
           <div className="mt-3"><QuickAddLink /></div>
         </div>
@@ -94,10 +94,7 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
       <div className="min-w-0 flex-1">
         <header className="border-b border-stone-200 bg-white lg:hidden">
           <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold text-teal-700">ניהול משרד</p>
-              <p className="text-xs text-stone-500">דיני עבודה</p>
-            </div>
+            <FirmBrand compact />
             <div className="flex items-center gap-2"><QuickAddLink /><div className="w-24"><LogoutButton /></div></div>
           </div>
           <div className="px-3 pb-3"><GlobalSearch compact /></div>

@@ -19,6 +19,11 @@ describe("Accounting financial-control invariants", () => {
     const result = calculateAccountingSummary({ clientIncome: "0.00", manualIncome: [], expenses: [], taxPayments: [], liabilities: [], clientBalances: ["6000.00"], trustTransactions: [{ transactionType: "receipt", amount: "30000.00" }, { transactionType: "release", amount: "12000.00" }] });
     expect(result.trustBalance).toBe("18000.00"); expect(result.totalIncome).toBe("0.00"); expect(result.operatingNet).toBe("0.00"); expect(result.receivablesTotal).toBe("6000.00");
   });
+  it("uses exact values when evaluating a trust release against an existing balance", async () => {
+    const { isNegativeAmount, subtractAmounts } = await import("./decimal");
+    expect(isNegativeAmount(subtractAmounts("0.10", "0.11"))).toBe(true);
+    expect(isNegativeAmount(subtractAmounts("0.10", "0.10"))).toBe(false);
+  });
   it("shows only open tax and VAT liabilities while paid liabilities stay historical", () => {
     const result = calculateAccountingSummary({ clientIncome: "0.00", manualIncome: [], expenses: [], taxPayments: [], liabilities: [{ liabilityType: "tax", status: "open", amount: "6000.00" }, { liabilityType: "vat", status: "open", amount: "3400.00" }, { liabilityType: "vat", status: "paid", amount: "999.00" }], clientBalances: [], trustTransactions: [] });
     expect(result.openTaxOwed).toBe("6000.00"); expect(result.openVatOwed).toBe("3400.00");

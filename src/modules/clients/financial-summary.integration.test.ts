@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { drizzle } from "drizzle-orm/pg-proxy";
 import postgres from "postgres";
 import { getFinancialSummary } from "./financial-summary";
+import { getReadOnlyTestDatabaseUrl } from "@/test/test-database";
 
 const mocks = vi.hoisted(() => ({ database: vi.fn() }));
 vi.mock("@/db/client", () => ({ createDatabaseClient: mocks.database }));
@@ -19,8 +20,7 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL financial 
   let fixture: string;
 
   beforeAll(() => {
-    if (!process.env.DATABASE_URL) process.loadEnvFile(".env.local");
-    connection = postgres(process.env.DATABASE_URL!, { max: 1, prepare: false, connect_timeout: 10,
+    connection = postgres(getReadOnlyTestDatabaseUrl(), { max: 1, prepare: false, connect_timeout: 10,
       connection: { default_transaction_read_only: true } });
     mocks.database.mockReturnValue(drizzle(async (sql, params) => ({
       rows: await connection.unsafe(`with financial_records(owner_user_id, client_id, type, amount, record_date) as (${fixture}) ${sql}`, params as string[]).values(),

@@ -23,4 +23,12 @@ export function getSafeHttpsUrl(value: string): string | null {
   }
 }
 
+/** Server-side validation for fields that are intended to be external links. */
+export const optionalSafeHttpsUrlSchema = z.preprocess(
+  emptyToNull,
+  z.string().trim().max(2048, "הקישור ארוך מדי.")
+    .refine((value) => getSafeHttpsUrl(value) !== null, "יש להזין קישור HTTPS תקין ללא פרטי התחברות.")
+    .nullable(),
+);
+
 export type DocumentReferenceFields = z.infer<typeof documentReferenceSchema>;

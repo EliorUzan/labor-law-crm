@@ -24,3 +24,7 @@ export function subtractAmounts(first: string, ...values: string[]): string {
 export function positiveAmount(value: string): string | null {
   return toCents(value) > 0n ? fromCents(toCents(value)) : null;
 }
+
+export function isNegativeAmount(value: string): boolean {
+  return toCents(value) < 0n;
+}

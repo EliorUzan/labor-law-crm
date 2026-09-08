@@ -181,6 +181,7 @@ export const financialRecords = pgTable(
       table.clientId,
       table.recordDate,
     ),
+    check("financial_records_amount_positive", sql`${table.amount} > 0`),
   ],
 );
 
@@ -325,6 +326,7 @@ export const accountingRecords = pgTable(
   },
   (table) => [
     index("accounting_records_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate),
+    check("accounting_records_amount_positive", sql`${table.amount} is null or ${table.amount} > 0`),
   ],
 );
 
@@ -339,7 +341,10 @@ export const manualIncome = pgTable(
     notes: text("notes"),
     ...timestamps(),
   },
-  (table) => [index("manual_income_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate)],
+  (table) => [
+    index("manual_income_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate),
+    check("manual_income_amount_positive", sql`${table.amount} > 0`),
+  ],
 );
 
 export const officeExpenses = pgTable(
@@ -355,7 +360,10 @@ export const officeExpenses = pgTable(
     notes: text("notes"),
     ...timestamps(),
   },
-  (table) => [index("office_expenses_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate)],
+  (table) => [
+    index("office_expenses_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate),
+    check("office_expenses_amount_positive", sql`${table.amount} > 0`),
+  ],
 );
 
 export const trustTransactions = pgTable(
@@ -385,6 +393,7 @@ export const trustTransactions = pgTable(
     }).onDelete("restrict"),
     index("trust_transactions_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate),
     index("trust_transactions_owner_user_id_client_id_idx").on(table.ownerUserId, table.clientId),
+    check("trust_transactions_amount_positive", sql`${table.amount} > 0`),
   ],
 );
 
@@ -405,6 +414,7 @@ export const accountingLiabilities = pgTable(
   (table) => [
     unique("accounting_liabilities_owner_user_id_id_unique").on(table.ownerUserId, table.id),
     index("accounting_liabilities_owner_user_id_status_idx").on(table.ownerUserId, table.status),
+    check("accounting_liabilities_amount_positive", sql`${table.amount} > 0`),
   ],
 );
 
@@ -432,6 +442,7 @@ export const taxPayments = pgTable(
     }).onDelete("restrict"),
     index("tax_payments_owner_user_id_record_date_idx").on(table.ownerUserId, table.recordDate),
     index("tax_payments_owner_user_id_liability_id_idx").on(table.ownerUserId, table.liabilityId),
+    check("tax_payments_amount_positive", sql`${table.amount} > 0`),
   ],
 );
 
@@ -451,5 +462,6 @@ export const accountingObligations = pgTable(
   },
   (table) => [
     index("accounting_obligations_owner_user_id_done_due_date_idx").on(table.ownerUserId, table.done, table.dueDate),
+    check("accounting_obligations_amount_positive", sql`${table.amount} is null or ${table.amount} > 0`),
   ],
 );

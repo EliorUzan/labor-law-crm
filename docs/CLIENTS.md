@@ -80,18 +80,21 @@ pnpm run test
 pnpm run build
 ```
 
-Typecheck, lint and production build pass. The full run with the optional
-PostgreSQL tests enabled passes **63 tests in 9 files**. To include those three
-read-only integration tests, configure `.env.local` with `DATABASE_URL` and run:
+Typecheck, lint and production build pass. The optional PostgreSQL integration
+tests are deliberately isolated from the application connection. To include
+them, configure `TEST_DATABASE_URL` with a separate database whose name contains
+`test`; never use `.env.local` or production credentials:
 
 ```powershell
 $env:CRM_READONLY_DB_TEST = '1'
+$env:TEST_DATABASE_URL = 'postgresql://.../labor_law_crm_test?sslmode=require'
 pnpm run test
 Remove-Item Env:CRM_READONLY_DB_TEST
+Remove-Item Env:TEST_DATABASE_URL
 ```
 
-Without that flag, the three database integration tests are intentionally
-skipped; the remaining 60 tests do not require a live database. The integration
+Without that flag, the read-only database integration tests are intentionally
+skipped; the remaining tests do not require a live database. The integration
 connection enforces read-only transactions. Its CTEs shadow `financial_records`
 only for the SELECT, covering exact totals, owner/client isolation, monthly
 boundaries, empty results, credits and large sums.

@@ -6,6 +6,7 @@ import { getMatterDeadline, getMatterWork } from "./queries";
 import { getDashboardData } from "@/modules/dashboard/queries";
 import { saveDeadline, saveImportantDate } from "./actions";
 import { getClientDetail } from "@/modules/clients/queries";
+import { getReadOnlyTestDatabaseUrl } from "@/test/test-database";
 
 const mocks = vi.hoisted(() => ({ database: vi.fn() }));
 vi.mock("@/db/client", () => ({ createDatabaseClient: mocks.database }));
@@ -32,8 +33,7 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
   const common = (n: number, rowOwner = owner, parent = matterId) => `'${id(n)}'::uuid, '${rowOwner}'::uuid, '${parent}'::uuid`;
   const stamps = "'2026-09-08'::timestamptz, '2026-09-08'::timestamptz";
   beforeAll(() => {
-    if (!process.env.DATABASE_URL) process.loadEnvFile(".env.local");
-    connection = postgres(process.env.DATABASE_URL!, { max: 1, prepare: false, connect_timeout: 10,
+    connection = postgres(getReadOnlyTestDatabaseUrl(), { max: 1, prepare: false, connect_timeout: 10,
       connection: { default_transaction_read_only: true } });
     mocks.database.mockReturnValue(drizzle(async (sql, params) => {
       if (/^update "(deadlines|important_dates)"/.test(sql)) {
