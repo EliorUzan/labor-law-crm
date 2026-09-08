@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   formatIsraeliDate,
   formatIsraeliDateTime,
@@ -109,8 +110,8 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
           ) : (
             <ul className="divide-y divide-stone-100">
               {data.obligations.map((obligation) => (
-                <li className="py-3 first:pt-0 last:pb-0" key={`${obligation.clientName}-${obligation.title}`}>
-                  <p className="font-medium text-stone-900">{obligation.title}</p>
+                <li className="py-3 first:pt-0 last:pb-0" key={obligation.id}>
+                  <Link className="font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/clients/${obligation.clientId}#obligations`}>{obligation.title}</Link>
                   <Metadata>
                     {[obligation.clientName, obligation.matterTitle].filter(Boolean).join(" · ")}
                     {obligation.dueDate ? ` · עד ${formatIsraeliDate(obligation.dueDate)}` : ""}

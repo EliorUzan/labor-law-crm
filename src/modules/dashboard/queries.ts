@@ -1,19 +1,19 @@
 import "server-only";
 
-import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte } from "drizzle-orm";
 
 import { createDatabaseClient } from "@/db/client";
 import {
   clientObligations,
   clients,
   deadlines,
-  financialRecords,
   importantDates,
   matters,
   tasks,
 } from "@/db/schema";
 
-import { getJerusalemMonthRange, orderTasksByDeadline } from "./format";
+import { orderTasksByDeadline } from "./format";
+import { getFinancialSummary } from "@/modules/clients/financial-summary";
 
 const DASHBOARD_LIST_LIMIT = 8;
 
@@ -28,6 +28,8 @@ export type DashboardData = {
   }>;
   importantDates: Array<{ title: string; matterTitle: string; eventAt: Date; type: string | null }>;
   obligations: Array<{
+    id: string;
+    clientId: string;
     title: string;
     clientName: string;
     matterTitle: string | null;
@@ -41,9 +43,8 @@ export type DashboardData = {
 export async function getDashboardData(ownerUserId: string): Promise<DashboardData> {
   const database = createDatabaseClient();
   const generatedAt = new Date();
-  const { monthStart, nextMonthStart } = getJerusalemMonthRange(generatedAt);
 
-  const [deadlineRows, taskRows, importantDateRows, obligationRows, recentMatterRows, financialRows] =
+  const [deadlineRows, taskRows, importantDateRows, obligationRows, recentMatterRows, financialSummary] =
     await Promise.all([
       database
         .select({
@@ -95,6 +96,8 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
         .limit(DASHBOARD_LIST_LIMIT),
       database
         .select({
+          id: clientObligations.id,
+          clientId: clientObligations.clientId,
           title: clientObligations.title,
           clientName: clients.name,
           matterTitle: matters.title,
@@ -125,13 +128,7 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
         .where(eq(matters.ownerUserId, ownerUserId))
         .orderBy(desc(matters.updatedAt))
         .limit(DASHBOARD_LIST_LIMIT),
-      database
-        .select({
-          outstandingAmount: sql<string>`coalesce(sum(case when ${financialRecords.type} in ('fee', 'charge') then ${financialRecords.amount} else -${financialRecords.amount} end), 0)`,
-          paymentsReceivedThisMonth: sql<string>`coalesce(sum(case when ${financialRecords.type} = 'payment' and ${financialRecords.recordDate} >= ${monthStart} and ${financialRecords.recordDate} < ${nextMonthStart} then ${financialRecords.amount} else 0 end), 0)`,
-        })
-        .from(financialRecords)
-        .where(eq(financialRecords.ownerUserId, ownerUserId)),
+      getFinancialSummary(ownerUserId, undefined, generatedAt),
     ]);
 
   return {
@@ -144,9 +141,6 @@ export async function getDashboardData(ownerUserId: string): Promise<DashboardDa
     importantDates: importantDateRows,
     obligations: obligationRows,
     recentMatters: recentMatterRows,
-    financialSummary: {
-      outstandingAmount: financialRows[0]?.outstandingAmount ?? "0",
-      paymentsReceivedThisMonth: financialRows[0]?.paymentsReceivedThisMonth ?? "0",
-    },
+    financialSummary,
   };
 }

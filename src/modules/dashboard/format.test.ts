@@ -11,6 +11,8 @@ describe("dashboard formatting", () => {
   it("formats exact database decimal values without losing fractional cents", () => {
     expect(formatIsraeliShekels("999999999999.99")).toContain(".99 ₪");
     expect(formatIsraeliShekels("125")).toMatch(/125.00 ₪$/);
+    expect(formatIsraeliShekels("-0.01")).toBe("-0.01 ₪");
+    expect(formatIsraeliShekels("-1000.20")).toBe("-1,000.20 ₪");
   });
 
   it("keeps date-only values on their stored Israeli calendar date", () => {

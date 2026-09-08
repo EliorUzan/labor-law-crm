@@ -15,7 +15,7 @@ export function formatIsraeliShekels(amount: string): string {
   }
 
   const [, sign, whole, decimal = ""] = match;
-  const wholeNumber = BigInt(`${sign}${whole}`);
+  const wholeNumber = BigInt(whole);
   const formatter = new Intl.NumberFormat("he-IL", {
     maximumFractionDigits: 0,
     useGrouping: true,
@@ -24,7 +24,7 @@ export function formatIsraeliShekels(amount: string): string {
     .formatToParts(1.1)
     .find((part) => part.type === "decimal")?.value ?? ".";
 
-  return `${formatter.format(wholeNumber)}${decimalSeparator}${decimal.padEnd(2, "0")} ₪`;
+  return `${sign}${formatter.format(wholeNumber)}${decimalSeparator}${decimal.padEnd(2, "0")} ₪`;
 }
 
 /** Formats a timestamp for Israeli users while retaining the timestamp's instant. */

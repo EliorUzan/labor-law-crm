@@ -20,7 +20,7 @@ function Navigation({ compact = false }: { compact?: boolean }) {
     <nav aria-label="ניווט ראשי" className={compact ? "overflow-x-auto" : "mt-8"}>
       <ul className={compact ? "flex min-w-max gap-1" : "space-y-1"}>
         {navigationItems.map((item) => {
-          const isCurrent = pathname === item.href;
+          const isCurrent = pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
 
           return (
             <li key={item.href}>
