@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({ save: vi.fn(), toggle: vi.fn() }));
 vi.mock("./actions", () => ({ saveTask: mocks.save, saveDeadline: mocks.save, saveImportantDate: mocks.save, setTaskDone: mocks.toggle,
   deleteDeadline: mocks.save, deleteImportantDate: mocks.save, addImportantDateType: mocks.save, removeImportantDateType: mocks.save,
   saveDashboardImportantDate: mocks.save }));
+vi.mock("@/modules/clients/actions", () => ({ createClient: mocks.save, updateClient: mocks.save, addFinancialRecord: mocks.save,
+  updateFinancialRecord: mocks.save, addObligation: mocks.save, updateObligation: mocks.save, setObligationCompletion: mocks.toggle }));
 const matterId = "33333333-3333-4333-8333-333333333333";
 const now = new Date("2026-09-08T10:00:00Z");
 const common = { ownerUserId: "owner", matterId, createdAt: now, updatedAt: now, description: null };
@@ -39,7 +41,7 @@ afterEach(async () => {
 describe("work UI", () => {
   it("keeps distinct sections, historical dates and completed Tasks visible", () => {
     container.innerHTML = renderToStaticMarkup(<MatterWorkSections matterId={matterId} data={data} now={now} />);
-    expect(container.querySelector("#deadlines")?.textContent).toContain("טופל — כל המשימות הושלמו");
+    expect(container.querySelector("#deadlines")?.textContent).toContain("טופל — כל הפריטים המקושרים הושלמו");
     expect(container.querySelector("#important-dates")?.textContent).toContain("דיון ישן");
     expect(container.querySelector("#tasks")?.textContent).toContain("משימות שהושלמו");
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(2);
@@ -63,6 +65,14 @@ describe("work UI", () => {
     expect(card.querySelectorAll('a[href^="#task-"]')).toHaveLength(2);
     expect(card.querySelectorAll('a[href^="/clients/client#obligation-"]')).toHaveLength(2);
     expect(card.textContent).toContain("הושלמה");
+  });
+  it("treats a Deadline paired only with a completed Client Obligation as resolved", () => {
+    container.innerHTML = renderToStaticMarkup(<MatterWorkSections matterId={matterId} now={now} data={{
+      ...data, tasks: [], obligations: [{ id: "obligation", clientId: "client", deadlineId: "deadline", title: "טיוטה", done: true }],
+    }} />);
+    const card = container.querySelector("#deadline-deadline")!;
+    expect(card.textContent).toContain("טופל — כל הפריטים המקושרים הושלמו");
+    expect(card.textContent).not.toContain("באיחור");
   });
   it("Task form has only a required title, optional description and same-Matter Deadline choices", () => {
     container.innerHTML = renderToStaticMarkup(<WorkForm matterId={matterId} kind="task" deadlines={[{ id: "deadline", label: "דדליין בתיק" }]} />);
@@ -145,5 +155,18 @@ describe("work UI", () => {
       expect(row.querySelector(`a[href="/matters/${matterId}"]`)?.textContent).toBe("תיק");
       expect(row.textContent).toContain("|");
     }
+  });
+  it("lets the Dashboard complete a client obligation and edit recent financial activity", () => {
+    container.innerHTML = renderToStaticMarkup(<Dashboard data={{
+      generatedAt: now, financialSummary: { outstandingAmount: "0", paymentsReceivedThisMonth: "0" }, recentMatters: [],
+      tasks: [], deadlines: [], importantDates: [], accountingObligations: [],
+      obligations: [{ id: "obligation", clientId: "client", title: "לחזור ללקוח", clientName: "לקוח", matterId, matterTitle: "תיק", deadlineId: null, deadlineTitle: null, deadlineAt: null, dueDate: null }],
+      financialActivity: [{ id: "record", clientId: "client", clientName: "לקוח", matterId, matterTitle: "תיק", type: "payment", amount: "12.30", recordDate: "2026-09-08", description: "הועבר", updatedAt: now }],
+      matterOptions: [{ id: matterId, clientId: "client", title: "תיק", clientName: "לקוח" }],
+    }} />);
+    expect(container.querySelector('input[aria-label="סימון כהושלמה: לחזור ללקוח"]')).not.toBeNull();
+    expect(container.textContent).toContain("פעילות כספית אחרונה");
+    expect(container.textContent).toContain("עריכת רשומה כספית");
+    expect((container.querySelector('input[name="amount"]') as HTMLInputElement).value).toBe("12.30");
   });
 });

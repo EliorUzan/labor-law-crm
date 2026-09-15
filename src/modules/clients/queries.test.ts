@@ -68,9 +68,9 @@ describe("shared Dashboard aggregation", () => {
   });
   it("uses the shared totals, owner-scoped joins, and only open obligations on the Dashboard", async () => {
     await getDashboardData(owner);
-    expect(execute).toHaveBeenCalledTimes(12);
+    expect(execute).toHaveBeenCalledTimes(13);
     for (const [, params] of execute.mock.calls) expect(params).toContain(owner);
-    const [sql, params] = execute.mock.calls.find(([sql]) => sql.includes('from "client_obligations"'))!;
+    const [sql, params] = execute.mock.calls.find(([sql]) => sql.includes('from "client_obligations" inner join'))!;
     expect(sql).toContain('"client_obligations"."done" =');
     expect(sql).toContain('"clients"."owner_user_id" =');
     expect(sql).toContain('"matters"."client_id" = "client_obligations"."client_id"');
@@ -78,6 +78,8 @@ describe("shared Dashboard aggregation", () => {
     expect(sql).toContain('"dashboard_deadline_matters"."id" = "deadlines"."matter_id"');
     expect(sql).toContain('"deadlines"."owner_user_id" =');
     expect(params).toContain(false);
-    expect(execute.mock.calls.filter(([sql]) => sql.includes('from "financial_records"'))).toHaveLength(1);
+    const financialCalls = execute.mock.calls.filter(([sql]) => sql.includes('from "financial_records"'));
+    expect(financialCalls).toHaveLength(2);
+    expect(financialCalls.some(([sql]) => sql.includes('order by "financial_records"."record_date" desc'))).toBe(true);
   });
 });

@@ -94,33 +94,23 @@ controlled deployment/CI step before a compatible application release. A simple
 single environment plus a separate development project is sufficient initially;
 do not introduce staging infrastructure unless actual use warrants it.
 
-## Documents
+## Documents and desktop
 
-V1's Matter-only document-reference feature is removed. V2 CRM 01 adds
-owner-scoped Documents for real files under the configured synchronized desktop
-root, plus finite Document links. `documents.id` is durable identity and
-`relative_path` is canonical and relative to that machine-local root; no absolute
-path, provider ID, Drive-folder metadata, or compatibility record is retained.
-The focused service validates the authenticated owner for both the Document and
-each allowed target; it is not a general entity graph. No file-picker, import,
-open, or managed-folder functionality is implemented in this stage. See
-[DOCUMENT_MODEL.md](DOCUMENT_MODEL.md) for the exact model and migration rules.
+The optional Electron shell loads the same Next.js CRM. Node integration remains
+disabled, with context isolation, sandboxing, and exact-origin/main-frame IPC
+validation. Its narrow native bridge chooses/verifies a Google Drive root,
+selects files, accepts native drops, and opens validated local document paths.
+Absolute paths remain machine-local and scoped by CRM origin, user and cloud root.
 
-## V2 desktop and managed documents
+Owner-scoped Documents and finite parent links retain durable CRM UUIDs. They now
+store Drive IDs/web URLs alongside canonical relative paths. Google OAuth/API
+access resolves web identities, verifies cloud ancestry and creates new files
+under CRM / Client / Matter. Desktop sync remains Google's responsibility.
+Existing files stay in place; outside files and symlink/path escapes fail closed.
 
-V2 retains this same Next.js application as the only CRM frontend. The optional
-desktop client is a thin Electron shell which loads the local development URL or
-an explicitly configured HTTPS production CRM URL; it does not bundle a second
-copy of the application. Electron's remote renderer is untrusted: Node
-integration is disabled, context isolation and sandboxing are enabled, navigation
-is restricted to the configured CRM origin, and the preload surface is a narrow
-capability handshake. Shared UI accesses desktop-only functionality through a
-browser-safe adapter, so ordinary browsers work without Electron globals.
-
-Google Drive for Desktop synchronizes the configured local root; PostgreSQL holds
-only CRM metadata, root-relative paths and associations. The root is a
-per-computer desktop setting, never a cloud/user setting. No Google OAuth or
-Drive API integration is part of this model. See `docs/V2_DOCUMENTS_AND_DESKTOP.md`.
+Refresh tokens are encrypted in a server-only table with RLS and no Data API
+grants. The root verification uses a temporary cloud file synchronized to the
+candidate desktop folder. See DOCUMENT_MODEL.md and V2_DOCUMENTS_AND_DESKTOP.md.
 
 ## Future email and AI integrations
 

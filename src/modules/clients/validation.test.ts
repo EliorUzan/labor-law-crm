@@ -14,6 +14,9 @@ describe("client input", () => {
       expect(clientSchema.safeParse(value).success).toBe(false);
     }
   });
+  it("accepts a syntactically valid email on a custom client domain", () => {
+    expect(clientSchema.parse({ name: "שם", email: "office@client-law.co.il" }).email).toBe("office@client-law.co.il");
+  });
   it("never accepts identity or owner fields in an update payload", () => {
     const result = clientSchema.parse({ name: "שם", id: clientId, ownerUserId: clientId, israeliId: "123456789" });
     expect(result).not.toHaveProperty("id");

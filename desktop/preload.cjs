@@ -1,16 +1,21 @@
 "use strict";
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-const { contextBridge } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
-// This is intentionally a capability handshake only. Future native operations
-// must be individually validated in the main process and added deliberately.
+// Every native operation is validated in the main process. No generic filesystem
+// or shell capability is exposed to the remote renderer.
 contextBridge.exposeInMainWorld("crmDesktop", {
   getBridgeInfo: () => Promise.resolve({
     platform: "desktop",
-    bridgeVersion: "0.1.0",
-    canOpenLocalFiles: false,
+    bridgeVersion: "0.2.0",
+    canOpenLocalFiles: true,
     canRevealInFinder: false,
-    canChooseLocalRoot: false,
+    canChooseLocalRoot: true,
   }),
+  documentSettings: () => ipcRenderer.invoke("documents:settings"),
+  chooseDocumentRoot: () => ipcRenderer.invoke("documents:choose-root"),
+  chooseDocuments: () => ipcRenderer.invoke("documents:choose-files"),
+  droppedDocuments: (files) => ipcRenderer.invoke("documents:dropped-files", files.map((file) => webUtils.getPathForFile(file))),
+  openDocument: (relativePath) => ipcRenderer.invoke("documents:open", relativePath),
 });

@@ -834,18 +834,24 @@ Upcoming Important Dates should appear on the Dashboard.
 The prior Matter-only note-style document-reference feature is removed. Do not
 migrate, preserve, or compatibility-wrap it.
 
-## DOC-002 — V2 filesystem-first documents
+## DOC-002 — Desktop and web documents
 
-A V2 Document represents a real file under one configured local root that Google
-Drive for Desktop already synchronizes. The database stores a durable Document
-UUID, canonical root-relative path, useful file metadata, and finite links to
-implemented substantive CRM records. A file can have several CRM links without
-being copied or moved.
+Documents are leaf records attached to Clients, Matters, payments and other
+implemented substantive records. They store a canonical path within the configured
+Drive folder, Google Drive file ID/web URL, and resolve the local machine path
+from this computer's verified root. Existing files stay in place. New files are
+created under CRM / Client / Matter; collisions never overwrite existing files.
 
-The configured root is machine-local desktop configuration and is never stored as
-an absolute database path. Native operations must reject absolute paths, traversal
-and root escapes. Google OAuth/Drive API, provider IDs, and CRM file sync are not
-core V2 requirements.
+Settings connects Google Drive automatically through OAuth and selects the cloud
+folder. Desktop Settings verifies its matching synchronized local folder using a
+temporary cloud proof file. Outside files, shortcuts and path escapes are rejected.
+Desktop browsing/drag-drop uses native paths and the default OS document app. Web
+browsing/Drive-link drops verify ancestry and open Google Docs/Sheets by format.
+Local browser file drops cannot prove their path and return a detailed error.
+
+Google Drive for Desktop performs synchronization. OAuth is used for cloud file
+identity and new document creation; the CRM does not implement a sync engine.
+See docs/DOCUMENT_MODEL.md and docs/V2_DOCUMENTS_AND_DESKTOP.md.
 
 ---
 

@@ -139,7 +139,7 @@ export function ObligationForm({ clientId, matters, deadlines = [], obligationId
   </form>;
 }
 
-export function ObligationCompletion({ clientId, obligationId, title, done }: { clientId: string; obligationId: string; title: string; done: boolean }) {
+export function ObligationCompletion({ clientId, obligationId, title, done, compact = false }: { clientId: string; obligationId: string; title: string; done: boolean; compact?: boolean }) {
   const [state, action, pending] = useActionState(setObligationCompletion.bind(null, clientId, obligationId), initialState);
   const id = useId();
   return <form action={action}>
@@ -147,7 +147,7 @@ export function ObligationCompletion({ clientId, obligationId, title, done }: { 
     <div className="flex items-start gap-2">
       <input id={id} type="checkbox" checked={done} disabled={pending} className="mt-1 size-4 shrink-0 accent-teal-700" aria-label={`${done ? "פתיחה מחדש" : "סימון כהושלמה"}: ${title}`}
         onChange={(event) => event.currentTarget.form?.requestSubmit()} />
-      <label htmlFor={id} className={`min-w-0 break-words font-medium ${done ? "text-stone-500 line-through" : "text-stone-900"}`}>{title}</label>
+      {!compact && <label htmlFor={id} className={`min-w-0 break-words font-medium ${done ? "text-stone-500 line-through" : "text-stone-900"}`}>{title}</label>}
       {pending && <span className="text-xs text-stone-500" role="status">מעדכן…</span>}
     </div>
     <noscript><button className="text-sm underline">{done ? "פתיחה מחדש" : "סימון כהושלמה"}</button></noscript>

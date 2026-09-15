@@ -11,6 +11,8 @@ import type { DashboardData } from "./queries";
 import { SmartCalendar } from "./calendar";
 import { defaultImportantDateTypes } from "@/modules/work/presentation";
 import { toJerusalemDate } from "@/modules/work/time";
+import { FinancialRecordForm, ObligationCompletion } from "@/modules/clients/forms";
+import { financialTypeLabels } from "@/modules/clients/presentation";
 
 function DashboardSection({
   title,
@@ -46,6 +48,8 @@ function MatterContext({ clientId, clientName, matterId, matterTitle }: {
 
 export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
   const accountingObligations = data.accountingObligations ?? [];
+  const financialActivity = data.financialActivity ?? [];
+  const matterOptions = data.matterOptions ?? [];
   return (
     <div className="space-y-6">
       <header>
@@ -131,7 +135,9 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
             <ul className="divide-y divide-stone-100">
               {data.obligations.map((obligation) => (
                 <li className="py-3 first:pt-0 last:pb-0" key={obligation.id}>
-                  <Link className="font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/clients/${obligation.clientId}#obligations`}>{obligation.title}</Link>
+                  <div className="flex items-start justify-between gap-3"><Link className="font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/clients/${obligation.clientId}#obligations`}>{obligation.title}</Link>
+                    <ObligationCompletion clientId={obligation.clientId} obligationId={obligation.id} title={obligation.title} done={false} compact />
+                  </div>
                   <Metadata>
                     {obligation.matterId && obligation.matterTitle ? <MatterContext clientId={obligation.clientId} clientName={obligation.clientName} matterId={obligation.matterId} matterTitle={obligation.matterTitle} /> : <Link className="text-teal-700 underline" href={`/clients/${obligation.clientId}`}><bdi>{obligation.clientName}</bdi></Link>}
                     {obligation.matterId && obligation.matterTitle && obligation.deadlineAt
@@ -182,6 +188,18 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
             </dd>
           </div>
         </dl>
+        <div className="mt-5 border-t border-stone-200 pt-4">
+          <h3 className="font-semibold text-stone-900">פעילות כספית אחרונה</h3>
+          {financialActivity.length === 0 ? <EmptyState>אין פעילות כספית להצגה</EmptyState> : <ul className="mt-3 divide-y divide-stone-100">{financialActivity.map((record) => <li key={record.id} className="py-3">
+            <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="font-medium">{financialTypeLabels[record.type]} <span className="text-sm font-normal text-stone-500">· {formatIsraeliDate(record.recordDate)}</span></p>
+              <Metadata>{record.matterId && record.matterTitle ? <MatterContext clientId={record.clientId} clientName={record.clientName} matterId={record.matterId} matterTitle={record.matterTitle} /> : <Link className="text-teal-700 underline" href={`/clients/${record.clientId}`}><bdi>{record.clientName}</bdi></Link>}</Metadata>
+              {record.description && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-stone-600" dir="auto">{record.description}</p>}</div>
+              <bdi className="shrink-0 font-semibold" dir="ltr">{formatIsraeliShekels(record.amount)}</bdi></div>
+            <details className="mt-3"><summary className="cursor-pointer text-sm text-teal-700">עריכת רשומה כספית</summary>
+              <FinancialRecordForm key={record.updatedAt.toISOString()} clientId={record.clientId} recordId={record.id} matters={matterOptions.filter((matter) => matter.clientId === record.clientId)} today={toJerusalemDate(data.generatedAt)} initial={{ type: record.type, amount: record.amount, recordDate: record.recordDate, matterId: record.matterId, description: record.description }} />
+            </details>
+          </li>)}</ul>}
+        </div>
       </DashboardSection>
     </div>
   );

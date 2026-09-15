@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DocumentPanel } from "@/modules/documents/document-panel";
 import { panelClass, buttonClass } from "@/modules/clients/presentation";
 import { formatIsraeliDate, formatIsraeliDateTime } from "@/modules/dashboard/format";
 import { MatterWorkSections } from "@/modules/work/matter-work";
@@ -40,6 +41,7 @@ export function MatterDetailView({ data, today, work }: { data: MatterDetail; to
       <h1 className="min-w-0 break-words text-3xl font-bold" dir="auto">{matter.title}</h1>
       <Link className={buttonClass} href={`/matters/${matter.id}/edit`}>עריכה</Link>
     </header>
+    <DocumentPanel target={{ type: "matter", id: matter.id }} expanded />
     {fields("פרטי תיק", details)}
     {fields("עורך דין בצד שכנגד", attorney)}
     {work && <MatterWorkSections matterId={matter.id} data={work.data} now={work.now} typeOptions={work.typeOptions} />}
@@ -54,6 +56,7 @@ export function MatterDetailView({ data, today, work }: { data: MatterDetail; to
         <details className="mt-3"><summary className="cursor-pointer text-sm text-teal-700">עריכת הערה</summary>
           <MatterNoteForm matterId={matter.id} noteId={note.id} initial={note.content} />
         </details>
+        <DocumentPanel target={{ type: "matter_note", id: note.id }} />
       </li>)}</ol> : <p className="mt-4 text-sm text-stone-500">אין הערות לתיק זה.</p>}
     </section>
     <section className={panelClass} id="history">
@@ -68,6 +71,7 @@ export function MatterDetailView({ data, today, work }: { data: MatterDetail; to
         <details className="mt-3"><summary className="cursor-pointer text-sm text-teal-700">עריכת אירוע</summary>
           <HistoryForm key={`${entry.eventDate}-${entry.title}-${entry.description}`} matterId={matter.id} entryId={entry.id} initial={entry} today={today} />
         </details>
+        <DocumentPanel target={{ type: "matter_history", id: entry.id }} />
       </li>)}</ol> : <p className="mt-4 text-sm text-stone-500">אין אירועים בהיסטוריית התיק.</p>}
     </section>
   </div>;

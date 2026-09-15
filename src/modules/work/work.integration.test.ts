@@ -29,6 +29,7 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
   let deadlineTime: string;
   let correctedTime: Date;
   let obligationDone: boolean;
+  let sharedObligation: boolean;
   let sharedTask: boolean;
   let secondTaskDone: boolean;
   const common = (n: number, rowOwner = owner, parent = matterId) => `'${id(n)}'::uuid, '${rowOwner}'::uuid, '${parent}'::uuid`;
@@ -74,7 +75,7 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
           ('${id(31)}'::uuid, '${owner}'::uuid, '${clientId}'::uuid, null::uuid, null::uuid, 'standalone obligation', null::text, null::date, false, ${stamps}),
           ('${id(32)}'::uuid, '${owner}'::uuid, '${clientId}'::uuid, '${matterId}'::uuid, null, 'matter-only obligation', null, null, false, ${stamps}),
           ('${id(33)}'::uuid, '${owner}'::uuid, '${clientId}'::uuid, '${matterId}'::uuid, '${id(3)}'::uuid, 'paired obligation', null, null, ${obligationDone}, ${stamps}),
-          ('${id(34)}'::uuid, '${owner}'::uuid, '${clientId}'::uuid, '${matterId}'::uuid, '${id(3)}'::uuid, 'second paired obligation', null, null, false, ${stamps}),
+          ${sharedObligation ? `('${id(34)}'::uuid, '${owner}'::uuid, '${clientId}'::uuid, '${matterId}'::uuid, '${id(3)}'::uuid, 'second paired obligation', null, null, false, ${stamps}),` : ""}
           ('${id(35)}'::uuid, '${other}'::uuid, '${clientId}'::uuid, '${matterId}'::uuid, '${id(3)}'::uuid, 'other owner obligation', null, null, false, ${stamps}),
           ('${id(36)}'::uuid, '${owner}'::uuid, '${other}'::uuid, '${matterId}'::uuid, '${id(3)}'::uuid, 'other client obligation', null, null, false, ${stamps})),
         important_dates(id, owner_user_id, matter_id, title, event_at, type, description, created_at, updated_at) as (values
@@ -87,7 +88,7 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-09-08T10:00:00Z"));
   });
-  beforeEach(() => { clientOwner = owner; matterOwner = owner; done = false; obligationDone = false; sharedTask = false; secondTaskDone = false; deadlineTime = "2026-09-10T12:00:00Z"; });
+  beforeEach(() => { clientOwner = owner; matterOwner = owner; done = false; obligationDone = false; sharedObligation = true; sharedTask = false; secondTaskDone = false; deadlineTime = "2026-09-10T12:00:00Z"; });
   afterAll(async () => { vi.useRealTimers(); await connection?.end({ timeout: 1 }); });
 
   it("orders Matter work, retains historical dates and separates open/completed Tasks", async () => {
@@ -121,6 +122,13 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
     deadlineTime = "2026-09-07T12:00:00Z";
     done = true; sharedTask = true; secondTaskDone = true;
     expect((await getDashboardData(owner)).deadlines.map((row) => row.title)).not.toContain("linked");
+  });
+  it("does not show an overdue Deadline after its only linked Client Obligation is completed, and reactivates it when reopened", async () => {
+    deadlineTime = "2026-09-07T12:00:00Z";
+    done = true; obligationDone = true; sharedObligation = false;
+    expect((await getDashboardData(owner)).deadlines.map((row) => row.title)).not.toContain("linked");
+    obligationDone = false;
+    expect((await getDashboardData(owner)).deadlines.find((row) => row.title === "linked")?.isOverdue).toBe(true);
   });
   it("keeps unlinked Deadline behavior unchanged", async () => {
     const dashboard = await getDashboardData(owner);

@@ -71,11 +71,13 @@ describe("owned work queries", () => {
       expect(sql).not.toContain('join "tasks"');
       expect(sql).toContain("not exists (select 1 from");
       expect(sql).toContain("exists (select 1 from");
+      expect(sql).toContain('from "client_obligations"');
+      expect(sql).toContain('"client_obligations"."done" =');
     }
   });
   it("scopes reverse obligation references through Client, Matter and Deadline", async () => {
     await getMatterWork(owner, matterId);
-    const [sql, params] = execute.mock.calls.find(([sql]) => sql.includes('from "client_obligations"'))!;
+    const [sql, params] = execute.mock.calls.find(([sql]) => sql.includes('from "client_obligations" inner join'))!;
     for (const table of ["client_obligations", "matters", "clients", "deadlines"]) expect(sql).toContain(`"${table}"."owner_user_id" =`);
     expect(sql).toContain('"matters"."client_id" = "client_obligations"."client_id"');
     expect(sql).toContain('"matters"."id" = "deadlines"."matter_id"');

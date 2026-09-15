@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DocumentPanel } from "@/modules/documents/document-panel";
 import { formatIsraeliDate, formatIsraeliShekels } from "@/modules/dashboard/format";
 import { toJerusalemDate } from "@/modules/work/time";
 import { FinancialRecordForm, ObligationForm, ObligationCompletion } from "./forms";
@@ -34,6 +35,7 @@ export function ClientDetailView({ data, today, trustBalance }: { data: ClientDe
     <details className="mt-3"><summary className="cursor-pointer text-sm text-teal-700">עריכת התחייבות</summary>
       <ObligationForm key={obligation.updatedAt.toISOString()} clientId={client.id} obligationId={obligation.id} initial={obligation} matters={matters} deadlines={deadlineOptions} />
     </details>
+    <DocumentPanel target={{ type: "client_obligation", id: obligation.id }} />
   </li>)}</ul>;
 
   return <div className="space-y-5">
@@ -42,6 +44,7 @@ export function ClientDetailView({ data, today, trustBalance }: { data: ClientDe
       <h1 className="min-w-0 break-words text-3xl font-bold">{client.name}</h1>
       <Link className={buttonClass} href={`/clients/${client.id}/edit`}>עריכה</Link>
     </header>
+    <DocumentPanel target={{ type: "client", id: client.id }} expanded />
     {contactFields.length > 0 && <section className={panelClass}>
       <h2 className="text-lg font-bold">פרטי לקוח</h2>
       <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">{contactFields.map((field) => <div key={field.label} className={field.label === "הערות" ? "sm:col-span-2" : ""}>
@@ -71,6 +74,7 @@ export function ClientDetailView({ data, today, trustBalance }: { data: ClientDe
           <details className="mt-3"><summary className="cursor-pointer text-sm text-teal-700">עריכת רשומה כספית</summary>
             <FinancialRecordForm key={record.updatedAt.toISOString()} clientId={client.id} recordId={record.id} matters={matters} today={today} initial={record} />
           </details>
+          <DocumentPanel target={{ type: "financial_record", id: record.id }} />
         </div><bdi className="font-semibold" dir="ltr">{formatIsraeliShekels(record.amount)}</bdi>
       </li>)}</ul> : <p className="mt-2 text-sm text-stone-500">אין רשומות כספיות ללקוח זה.</p>}
     </section>

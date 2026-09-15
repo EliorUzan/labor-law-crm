@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -333,6 +334,8 @@ export const documents = pgTable(
     displayName: text("display_name").notNull(),
     /** Canonical slash-delimited path relative to the machine-local configured root. */
     relativePath: text("relative_path").notNull(),
+    driveFileId: text("drive_file_id"),
+    webUrl: text("web_url"),
     mimeType: text("mime_type"),
     extension: text("extension"),
     sizeBytes: bigint("size_bytes", { mode: "number" }),
@@ -341,10 +344,21 @@ export const documents = pgTable(
   },
   (table) => [
     unique("documents_owner_relative_path_unique").on(table.ownerUserId, table.relativePath),
+    uniqueIndex("documents_owner_drive_file_unique").on(table.ownerUserId, table.driveFileId).where(sql`${table.driveFileId} is not null`),
     check("documents_relative_path_is_relative", sql`${table.relativePath} <> '' and ${table.relativePath} !~ '(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))'`),
     index("documents_owner_user_id_idx").on(table.ownerUserId),
   ],
 );
+
+/** Server-only Google credentials. No Data API grants; tokens are encrypted. */
+export const documentDriveConnections = pgTable("document_drive_connections", {
+  ownerUserId: uuid("owner_user_id").primaryKey().notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  googleAccountId: text("google_account_id").notNull(),
+  rootId: text("root_id"),
+  rootName: text("root_name"),
+  ...timestamps(),
+});
 
 /** A CRM association; it never represents the physical location of a file. */
 export const documentLinks = pgTable(

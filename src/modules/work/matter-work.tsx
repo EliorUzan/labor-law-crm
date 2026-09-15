@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DocumentPanel } from "@/modules/documents/document-panel";
 import { panelClass } from "@/modules/clients/presentation";
 import { formatIsraeliDate, formatIsraeliDateTime } from "@/modules/dashboard/format";
 import { DeleteWorkRecordForm, WorkForm, TaskCheckbox } from "./forms";
@@ -13,6 +14,7 @@ export function MatterWorkSections({ matterId, data, now, typeOptions = defaultI
     const rows = data.tasks.filter((task) => task.done === done);
     return rows.length ? <ul className="mt-3 divide-y divide-stone-100">{rows.map((task) => <li className="py-3" key={task.id} id={`task-${task.id}`}>
       <TaskCheckbox matterId={matterId} taskId={task.id} done={task.done} title={task.title} />
+      <DocumentPanel target={{ type: "task", id: task.id }} />
       {task.deadlineAt && <p className="mt-1 break-words text-sm text-teal-800"><a href={`#deadline-${task.deadlineId}`} className="underline">
         דדליין: <bdi>{task.deadlineTitle}</bdi> · <bdi dir="ltr">{formatIsraeliDate(toJerusalemDate(task.deadlineAt))}</bdi>
       </a></p>}
@@ -32,15 +34,17 @@ export function MatterWorkSections({ matterId, data, now, typeOptions = defaultI
       <ImportantDateTypeManager options={typeOptions} />
       {data.deadlines.length ? <ol className="mt-4 space-y-3">{data.deadlines.map((deadline) => {
         const linkedTasks = data.tasks.filter((task) => task.deadlineId === deadline.id);
-        const resolved = isDeadlineResolved(linkedTasks);
-        const overdue = isDeadlineOverdue(deadline.deadlineAt, now, linkedTasks);
         const linkedObligations = data.obligations.filter((obligation) => obligation.deadlineId === deadline.id);
+        const linkedCompanions = [...linkedTasks, ...linkedObligations];
+        const resolved = isDeadlineResolved(linkedCompanions);
+        const overdue = isDeadlineOverdue(deadline.deadlineAt, now, linkedCompanions);
         return <li key={deadline.id} id={`deadline-${deadline.id}`} className={`rounded-lg border p-4 ${overdue ? "border-red-200 bg-red-50" : resolved ? "border-stone-200 bg-stone-50" : "border-amber-200 bg-amber-50"}`}>
           <div className="flex flex-wrap items-center gap-3">
             <time className="text-lg font-bold" dateTime={deadline.deadlineAt.toISOString()} dir="ltr">{formatIsraeliDate(toJerusalemDate(deadline.deadlineAt))}</time>
-            <span className={`rounded-full px-2 py-1 text-xs font-semibold ${overdue ? "bg-red-100 text-red-800" : resolved ? "bg-stone-200 text-stone-700" : "bg-amber-100 text-amber-900"}`}>{overdue ? "באיחור — המועד עבר" : resolved ? "טופל — כל המשימות הושלמו" : "מועד קרוב"}</span>
+            <span className={`rounded-full px-2 py-1 text-xs font-semibold ${overdue ? "bg-red-100 text-red-800" : resolved ? "bg-stone-200 text-stone-700" : "bg-amber-100 text-amber-900"}`}>{overdue ? "באיחור — המועד עבר" : resolved ? "טופל — כל הפריטים המקושרים הושלמו" : "מועד קרוב"}</span>
           </div>
           <h3 className="mt-2 break-words font-semibold" dir="auto">{deadline.title}</h3>
+          <DocumentPanel target={{ type: "deadline", id: deadline.id }} />
           {deadline.type && <p className="mt-1 inline-flex items-center gap-1 text-sm text-stone-600"><span className="size-2.5 rounded-full" style={{ backgroundColor: importantDateTypeColor(deadline.type, typeOptions) }} aria-hidden />{importantDateTypeLabel(deadline.type)}</p>}
           {deadline.description && <p className="mt-2 whitespace-pre-wrap break-words text-sm" dir="auto">{deadline.description}</p>}
           {linkedTasks.length > 0 && <div className="mt-3 text-sm"><h4 className="font-semibold">משימות מקושרות</h4>
@@ -85,6 +89,7 @@ export function MatterWorkSections({ matterId, data, now, typeOptions = defaultI
       {data.importantDates.length ? <ol className="mt-4 divide-y divide-stone-100">{data.importantDates.map((event) => <li key={event.id} className="py-4">
         <time className="font-semibold text-teal-800" dateTime={event.eventAt.toISOString()} dir="ltr">{formatIsraeliDateTime(event.eventAt)}</time>
         <h3 className="mt-1 break-words font-semibold" dir="auto">{event.title}</h3>
+        <DocumentPanel target={{ type: "important_date", id: event.id }} />
         {event.type && <p className="mt-1 inline-flex items-center gap-1 text-sm text-stone-500" dir="auto"><span className="size-2.5 rounded-full" style={{ backgroundColor: importantDateTypeColor(event.type, typeOptions) }} aria-hidden />{importantDateTypeLabel(event.type)}</p>}
         {event.description && <p className="mt-2 whitespace-pre-wrap break-words text-sm text-stone-600" dir="auto">{event.description}</p>}
         <details className="mt-3"><summary className="cursor-pointer text-sm text-teal-700">עריכת תאריך חשוב</summary>

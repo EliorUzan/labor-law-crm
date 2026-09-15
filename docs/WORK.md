@@ -21,11 +21,15 @@ Thread 5 results below are retained as historical handoff notes.
 - **Relationship:** the selector offers only Deadlines in the current Matter.
   Server validation rejects another Matter's Deadline even for the same owner.
   Task reads join the current Deadline, so its corrected title/time appears
-  without duplicated Task dates. Completing a Task leaves the Deadline intact.
+  without duplicated Task dates. Completion leaves the Deadline intact; on the
+  Dashboard, a linked Deadline is resolved only after all linked Tasks and
+  Client Obligations are complete.
 - **Matter page:** distinct Deadlines, Tasks, and Important Dates sections follow
   the existing case/attorney details, before Notes and Case History. All add/edit
   forms expand in place. Existing Notes and History behavior is preserved.
-- **Dashboard:** real standalone Deadlines, only undone Tasks (dated work first,
+- **Dashboard:** real standalone Deadlines and active linked Deadlines (a linked
+  Deadline is resolved when every linked Task/Client Obligation is complete),
+  only undone Tasks (dated work first,
   undated last), and only upcoming Important Dates. Each row links to its Matter
   section. Deadlines have separate limits of eight overdue and eight upcoming,
   preventing a backlog from hiding upcoming deadlines. Tasks and Important Dates

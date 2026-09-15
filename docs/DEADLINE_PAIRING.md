@@ -30,7 +30,9 @@ field exists.
 
 Deadline cards now list linked Tasks with navigation to their Task rows and a
 completion indication. A Deadline remains valid when neither Tasks nor
-Obligations reference it.
+Obligations reference it. On Dashboard, a linked Deadline is resolved only when
+all of its linked Tasks and Client Obligations are complete; reopening a
+companion reactivates it without deleting the Deadline.
 
 ## Client Obligation pairing and UI
 
@@ -65,14 +67,18 @@ Inline edit forms retain input/selection on errors and reset new forms only
 after successful saves.
 
 Deadline cards list linked Client Obligations with Client-page links and their
-completion state. Their primary management UI remains on the Client page.
+completion state. Their primary management UI remains on the Client page, with
+an open obligation also completable from Dashboard.
 
 ## Dashboard and refresh
 
-The existing open-obligations section still filters `done = false`. It displays
-Client context, optional Matter context, and the joined Deadline's current
-title/date/time when paired. Standalone and Matter-only obligations remain valid.
-Tasks, standalone Deadlines and Important Dates retain their existing behavior.
+The existing open-obligations section filters `done = false` and provides its
+completion control there. It displays Client context, optional Matter context,
+and the joined Deadline's current title/date/time when paired. Completing a
+linked obligation refreshes Dashboard and resolves its Deadline there only if
+all linked Tasks and Obligations are complete. Standalone and Matter-only
+obligations remain valid. Tasks, standalone Deadlines and Important Dates retain
+their existing behavior.
 
 Obligation mutations refresh the Client and Dashboard plus affected Matter pages.
 Moving an obligation refreshes both the previous and selected Matter. Deadline

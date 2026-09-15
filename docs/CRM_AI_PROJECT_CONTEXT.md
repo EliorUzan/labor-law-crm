@@ -267,12 +267,12 @@ document storage or arbitrary local-file access.
 
 ### V2
 
-A Document is a real file under one machine-local root already synchronized by
-Google Drive for Desktop. The CRM stores its owner-scoped metadata, canonical
-root-relative path and finite substantive-record links; `documents.id` is the
-durable identity. There are no legacy-reference records, provider file IDs, Drive
-folder metadata, Google OAuth/API, or custom sync engine in the core model. See
-`docs/DOCUMENT_MODEL.md`.
+Documents are real files under a configured Google Drive folder, linked to finite
+substantive records. Desktop Settings verifies the synchronized local root;
+absolute paths are derived per machine. The database stores canonical relative
+paths, Drive IDs and web URLs. Automatic OAuth access supports web opening and
+new files under CRM / Client / Matter. Existing files remain in place; outside
+files and path escapes are rejected. See `docs/DOCUMENT_MODEL.md`.
 
 ---
 

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 import { createDatabaseClient } from "@/db/client";
 import {
   accountingLiabilities, accountingObligations, clients, clientObligations, deadlines,
@@ -8,6 +8,8 @@ import {
   matterNotes, matters, officeExpenses, tasks, taxPayments, trustTransactions,
 } from "@/db/schema";
 import { recordIdSchema } from "@/modules/clients/validation";
+import { normalizeDocumentRelativePath } from "./validation";
+export { normalizeDocumentRelativePath } from "./validation";
 
 export const documentTargetTypes = [
   "client", "matter", "financial_record", "client_obligation", "task", "deadline",
@@ -20,6 +22,8 @@ export type DocumentTarget = { type: DocumentTargetType; id: string };
 export type DocumentMetadataInput = {
   displayName: string;
   relativePath: string;
+  driveFileId?: string | null;
+  webUrl?: string | null;
   mimeType?: string | null;
   extension?: string | null;
   sizeBytes?: number | null;
@@ -28,14 +32,6 @@ export type DocumentMetadataInput = {
 
 export function isDocumentTargetType(value: unknown): value is DocumentTargetType {
   return typeof value === "string" && (documentTargetTypes as readonly string[]).includes(value);
-}
-
-/** Canonical persisted form: non-empty, root-relative and slash-delimited. */
-export function normalizeDocumentRelativePath(value: string): string | null {
-  const path = value.trim().replaceAll("\\", "/").replace(/\/+/g, "/");
-  if (!path || path.startsWith("/") || /^[A-Za-z]:/.test(path)) return null;
-  if (path.split("/").some((part) => part === "" || part === "." || part === "..")) return null;
-  return path;
 }
 
 function validTarget(target: DocumentTarget): boolean {
@@ -79,6 +75,7 @@ export async function listDocumentsForTarget(ownerUserId: string, target: Docume
   if (!await targetExistsForOwner(ownerUserId, target)) return [];
   return createDatabaseClient().select({
     id: documents.id, displayName: documents.displayName, relativePath: documents.relativePath,
+    driveFileId: documents.driveFileId, webUrl: documents.webUrl,
     mimeType: documents.mimeType, extension: documents.extension, sizeBytes: documents.sizeBytes,
     fileModifiedAt: documents.fileModifiedAt, updatedAt: documents.updatedAt,
   }).from(documentLinks)
@@ -93,8 +90,18 @@ export async function createDocumentForTarget(ownerUserId: string, target: Docum
   if (!relativePath || !validMetadata(input) || !await targetExistsForOwner(ownerUserId, target)) return null;
   const database = createDatabaseClient();
   return database.transaction(async (transaction) => {
+    // Reuse an existing physical file when attaching it to another parent.
+    const [existing] = await transaction.select().from(documents).where(and(eq(documents.ownerUserId, ownerUserId),
+      or(eq(documents.relativePath, relativePath), input.driveFileId ? eq(documents.driveFileId, input.driveFileId) : undefined))).limit(1);
+    if (existing) {
+      if (existing.driveFileId && input.driveFileId && existing.driveFileId !== input.driveFileId) return null;
+      await transaction.update(documents).set({ ...input, relativePath, updatedAt: new Date() }).where(eq(documents.id, existing.id));
+      await transaction.insert(documentLinks).values({ documentId: existing.id, targetType: target.type, targetId: target.id }).onConflictDoNothing();
+      return { id: existing.id };
+    }
     const [document] = await transaction.insert(documents).values({
       ownerUserId, displayName: input.displayName.trim(), relativePath,
+      driveFileId: input.driveFileId ?? null, webUrl: input.webUrl ?? null,
       mimeType: input.mimeType ?? null, extension: input.extension ?? null,
       sizeBytes: input.sizeBytes ?? null, fileModifiedAt: input.fileModifiedAt ?? null,
     }).returning({ id: documents.id });

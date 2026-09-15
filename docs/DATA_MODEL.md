@@ -103,9 +103,12 @@ authorized to see another user's records.
 - Important Date type stays nullable free text. The suggested Hebrew types map
   to `hearing`, `meeting`, `mediation`, and `other`; custom/legacy text remains
   supported.
-- Completion belongs solely to Tasks. It does not complete, delete, or hide a
-  standalone Deadline. All past Deadlines and Important Dates stay on the Matter.
-  Upcoming Important Dates are filtered by their actual instant on Dashboard.
+- A standalone Deadline keeps its existing behavior. For Dashboard deadline
+  state, a Deadline with linked Tasks and/or Client Obligations is resolved only
+  when every linked companion is complete; reopening any companion reactivates
+  it. Completion never deletes the Deadline, and all past Deadlines and
+  Important Dates stay on the Matter. Upcoming Important Dates are filtered by
+  their actual instant on Dashboard.
 - See `docs/WORK.md` for actions, queries, UI, tests, and local acceptance steps.
 
 ## Thread 5 follow-up: optional pairing
@@ -117,9 +120,10 @@ It changes no existing rows. Task pairing/schema remains unchanged.
 Client forms clear Deadline selection when Matter changes or is removed. Server
 actions reject forged/stale cross-Matter combinations rather than silently
 reassigning a Deadline. Client and Dashboard reads join the current Deadline.
-Deadline cards show their linked Tasks and Client Obligations; completing either
-does not modify the Deadline. Mutations revalidate affected Client/Matter pages
-and Dashboard, including the original Matter after an obligation moves.
+Deadline cards show their linked Tasks and Client Obligations. Completion does
+not modify or delete the Deadline, but Dashboard state resolves it when all of
+its linked companions are complete. Mutations revalidate affected Client/Matter
+pages and Dashboard, including the original Matter after an obligation moves.
 
 See `docs/DEADLINE_PAIRING.md` for verification and exact local acceptance steps.
 
@@ -156,3 +160,13 @@ operation moves or renames the file; only canonical `relative_path` changes.
 Migration `0008_filesystem_first_document_correction.sql` removes the obsolete
 V1 table and prior provider/legacy schema without copying records. See
 [DOCUMENT_MODEL.md](DOCUMENT_MODEL.md) for ownership and migration semantics.
+
+## Documents — desktop/web access (2026-09-15)
+
+Migration 0009 adds nullable `drive_file_id` and `web_url` to Documents and
+a server-only `document_drive_connections` table for an encrypted refresh token,
+Google account identity, and cloud root. Local absolute roots remain per-computer
+settings; the local path is derived from the root and canonical relative path.
+Owner-scoped path/file uniqueness and finite parent links preserve leaf ownership.
+See DOCUMENT_MODEL.md for current behavior; it supersedes the earlier filesystem-only
+exclusions of Google API metadata in this document.

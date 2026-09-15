@@ -8,6 +8,7 @@ describe("desktop capability adapter", () => {
 
   it("accepts only the narrow validated Electron handshake", async () => {
     window.crmDesktop = {
+      documentSettings: vi.fn(), chooseDocumentRoot: vi.fn(), chooseDocuments: vi.fn(), droppedDocuments: vi.fn(), openDocument: vi.fn(),
       getBridgeInfo: vi.fn().mockResolvedValue({
         platform: "desktop", bridgeVersion: "0.1.0", canOpenLocalFiles: false,
         canRevealInFinder: false, canChooseLocalRoot: false,
