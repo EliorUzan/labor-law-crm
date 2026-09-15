@@ -1,21 +1,12 @@
-# V1 Documents and Accounting — Thread 6
+# Accounting — Thread 6
 
-## Documents
+## Document correction
 
-Document References belong directly to one owned Matter. V1 stores only metadata
-and a location/reference: no file upload, blobs, cloud-provider APIs, OAuth,
-synchronization, OCR, parsing, or automatic classification.
-
-The Matter page supports adding and editing a display name, required location,
-optional category, optional provider, and optional notes. The existing optional
-`external_id` field remains available for a future provider integration but is
-not collected in the V1 form. References are newest first. Only ordinary HTTPS
-URLs without embedded credentials receive a new-tab **פתח** link; local paths and
-all other references remain plain text.
-
-Every document query joins the owned Matter and Client. Document mutations
-authenticate, validate the Matter and record IDs, verify Matter ownership, and
-scope updates by record ID, Matter ID, and owner ID.
+The V1 Matter document-reference CRUD feature was removed and is not a document
+migration source. V2 uses filesystem-first `documents` and `document_links`; see
+[DOCUMENT_MODEL.md](DOCUMENT_MODEL.md). Existing accounting `document_link`
+fields remain ordinary optional HTTPS references until a V2 Document is explicitly
+linked to the relevant accounting record.
 
 ## Accounting
 

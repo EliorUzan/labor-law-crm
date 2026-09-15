@@ -55,7 +55,8 @@ export async function getClientDetail(ownerUserId: string, clientId: string) {
       .from(matters).where(and(eq(matters.ownerUserId, ownerUserId), eq(matters.clientId, clientId)))
       .orderBy(desc(matters.updatedAt), asc(matters.id)),
     database.select({ id: financialRecords.id, type: financialRecords.type, amount: financialRecords.amount,
-      recordDate: financialRecords.recordDate, description: financialRecords.description, matterId: financialRecords.matterId })
+      recordDate: financialRecords.recordDate, description: financialRecords.description, matterId: financialRecords.matterId,
+      updatedAt: financialRecords.updatedAt })
       .from(financialRecords).where(and(eq(financialRecords.ownerUserId, ownerUserId), eq(financialRecords.clientId, clientId)))
       .orderBy(desc(financialRecords.recordDate), desc(financialRecords.createdAt), desc(financialRecords.id)),
     database.select({ id: clientObligations.id, title: clientObligations.title, description: clientObligations.description,

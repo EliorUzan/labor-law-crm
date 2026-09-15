@@ -1,12 +1,14 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { panelClass, buttonClass } from "@/modules/clients/presentation";
 import { formatIsraeliDate, formatIsraeliDateTime } from "@/modules/dashboard/format";
+import { MatterWorkSections } from "@/modules/work/matter-work";
+import type { MatterWork } from "@/modules/work/queries";
+import type { ImportantDateTypeOption } from "@/modules/work/presentation";
 import { HistoryForm, MatterNoteForm } from "./forms";
 import { matterStatusLabel } from "./presentation";
 import type { MatterDetail } from "./queries";
 
-export function MatterDetailView({ data, today, work, documents }: { data: MatterDetail; today: string; work?: ReactNode; documents?: ReactNode }) {
+export function MatterDetailView({ data, today, work }: { data: MatterDetail; today: string; work?: { data: MatterWork; now: Date; typeOptions?: readonly ImportantDateTypeOption[] } }) {
   const { matter, client, history, notes } = data;
   const details = [
     { label: "סטטוס", value: matterStatusLabel(matter.status) },
@@ -40,8 +42,7 @@ export function MatterDetailView({ data, today, work, documents }: { data: Matte
     </header>
     {fields("פרטי תיק", details)}
     {fields("עורך דין בצד שכנגד", attorney)}
-    {work}
-    {documents}
+    {work && <MatterWorkSections matterId={matter.id} data={work.data} now={work.now} typeOptions={work.typeOptions} />}
     <section className={panelClass} id="notes">
       <h2 className="text-lg font-bold">הערות</h2>
       <details className="mt-4 rounded-lg border border-stone-200 p-3"><summary className="cursor-pointer font-medium text-teal-800">+ הוסף הערה</summary>

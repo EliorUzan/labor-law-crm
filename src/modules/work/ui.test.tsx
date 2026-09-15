@@ -9,7 +9,9 @@ import type { MatterWork } from "./queries";
 import type { WorkFormState } from "./actions";
 
 const mocks = vi.hoisted(() => ({ save: vi.fn(), toggle: vi.fn() }));
-vi.mock("./actions", () => ({ saveTask: mocks.save, saveDeadline: mocks.save, saveImportantDate: mocks.save, setTaskDone: mocks.toggle }));
+vi.mock("./actions", () => ({ saveTask: mocks.save, saveDeadline: mocks.save, saveImportantDate: mocks.save, setTaskDone: mocks.toggle,
+  deleteDeadline: mocks.save, deleteImportantDate: mocks.save, addImportantDateType: mocks.save, removeImportantDateType: mocks.save,
+  saveDashboardImportantDate: mocks.save }));
 const matterId = "33333333-3333-4333-8333-333333333333";
 const now = new Date("2026-09-08T10:00:00Z");
 const common = { ownerUserId: "owner", matterId, createdAt: now, updatedAt: now, description: null };
@@ -19,7 +21,7 @@ const data: MatterWork = {
     { ...common, id: "open", title: "להתקשר ללקוח", done: false, deadlineId: null, deadlineTitle: null, deadlineAt: null },
     { ...common, id: "done", title: "משימה גמורה", done: true, deadlineId: "deadline", deadlineTitle: "מועד להגשה", deadlineAt: now },
   ],
-  deadlines: [{ ...common, id: "deadline", title: "מועד להגשה", deadlineAt: new Date("2026-09-01T09:00:00Z") }],
+  deadlines: [{ ...common, id: "deadline", title: "מועד להגשה", type: "submissionDeadline", deadlineAt: new Date("2026-09-01T09:00:00Z") }],
   importantDates: [{ ...common, id: "event", title: "דיון ישן", eventAt: new Date("2026-08-01T06:00:00Z"), type: "hearing" }],
 };
 let container: HTMLDivElement;
@@ -37,7 +39,7 @@ afterEach(async () => {
 describe("work UI", () => {
   it("keeps distinct sections, historical dates and completed Tasks visible", () => {
     container.innerHTML = renderToStaticMarkup(<MatterWorkSections matterId={matterId} data={data} now={now} />);
-    expect(container.querySelector("#deadlines")?.textContent).toContain("באיחור — המועד עבר");
+    expect(container.querySelector("#deadlines")?.textContent).toContain("טופל — כל המשימות הושלמו");
     expect(container.querySelector("#important-dates")?.textContent).toContain("דיון ישן");
     expect(container.querySelector("#tasks")?.textContent).toContain("משימות שהושלמו");
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(2);
@@ -128,12 +130,20 @@ describe("work UI", () => {
   it("links Dashboard work to the correct Matter section and translates event types", () => {
     container.innerHTML = renderToStaticMarkup(<Dashboard data={{
       generatedAt: now, financialSummary: { outstandingAmount: "0", paymentsReceivedThisMonth: "0" }, recentMatters: [], obligations: [],
-      tasks: [{ id: "task", matterId, title: "משימה פתוחה", matterTitle: "תיק", deadlineAt: now, deadlineTitle: "דדליין" }],
-      deadlines: [{ id: "deadline", matterId, title: "מועד", matterTitle: "תיק", deadlineAt: now, isOverdue: true }],
-      importantDates: [{ id: "event", matterId, title: "אירוע", matterTitle: "תיק", eventAt: now, type: "mediation" }],
+      tasks: [{ id: "task", clientId: "client", clientName: "לקוח", matterId, title: "משימה פתוחה", matterTitle: "תיק", deadlineAt: now, deadlineTitle: "דדליין" }],
+      deadlines: [{ id: "deadline", clientId: "client", clientName: "לקוח", matterId, title: "מועד", matterTitle: "תיק", deadlineAt: now, isOverdue: true }],
+      importantDates: [{ id: "event", clientId: "client", clientName: "לקוח", matterId, title: "אירוע", matterTitle: "תיק", eventAt: now, type: "mediation" }],
     }} />);
     for (const section of ["tasks", "deadlines", "important-dates"]) expect(container.querySelector(`a[href="/matters/${matterId}#${section}"]`)).not.toBeNull();
     expect(container.textContent).toContain("גישור");
     expect(container.textContent).toContain("באיחור");
+    for (const section of ["tasks", "deadlines", "important-dates"]) {
+      const row = container.querySelector(`a[href="/matters/${matterId}#${section}"]`)?.closest("li");
+      expect(row).not.toBeNull();
+      if (!row) continue;
+      expect(row.querySelector('a[href="/clients/client"]')?.textContent).toBe("לקוח");
+      expect(row.querySelector(`a[href="/matters/${matterId}"]`)?.textContent).toBe("תיק");
+      expect(row.textContent).toContain("|");
+    }
   });
 });

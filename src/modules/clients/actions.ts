@@ -21,6 +21,7 @@ function refreshClient(clientId: string) {
   revalidatePath(`/clients/${clientId}/edit`);
   revalidatePath("/clients");
   revalidatePath("/");
+  revalidatePath("/accounting");
 }
 
 export async function createClient(_: ClientFormState, formData: FormData): Promise<ClientFormState> {
@@ -68,6 +69,29 @@ export async function addFinancialRecord(clientId: string, _: ClientFormState, f
   }
   refreshClient(clientId);
   return { success: "הרשומה הכספית נשמרה." };
+}
+
+export async function updateFinancialRecord(clientId: string, recordId: string, _: ClientFormState, formData: FormData): Promise<ClientFormState> {
+  const ownerUserId = await requireAuthenticatedUserId();
+  const values = formValues(formData);
+  const parsed = financialRecordSchema.safeParse({ ...Object.fromEntries(formData), clientId });
+  if (!recordIdSchema.safeParse(recordId).success || !parsed.success) return { error: "יש להזין סוג רשומה, סכום חיובי (עד 12 ספרות ושתי ספרות אחרי הנקודה) ותאריך תקין.", values };
+  let oldMatterId: string | null;
+  try {
+    if (!await ownsClientMatter(ownerUserId, clientId, parsed.data.matterId)) return { error: "הלקוח או התיק שנבחרו אינם זמינים.", values };
+    const database = createDatabaseClient();
+    const scope = and(eq(financialRecords.id, recordId), eq(financialRecords.clientId, clientId), eq(financialRecords.ownerUserId, ownerUserId));
+    const [existing] = await database.select({ matterId: financialRecords.matterId }).from(financialRecords).where(scope).limit(1);
+    if (!existing) return { error: "הרשומה הכספית אינה זמינה לעריכה.", values };
+    oldMatterId = existing.matterId;
+    const updated = await database.update(financialRecords).set({ ...parsed.data, updatedAt: new Date() }).where(scope).returning({ id: financialRecords.id });
+    if (!updated.length) return { error: "הרשומה הכספית אינה זמינה לעריכה.", values };
+  } catch {
+    return { error: "שמירת הרשומה הכספית נכשלה. נסו שוב.", values };
+  }
+  refreshClient(clientId);
+  for (const matterId of new Set([oldMatterId, parsed.data.matterId])) if (matterId) revalidatePath(`/matters/${matterId}`);
+  return { success: "הרשומה הכספית עודכנה." };
 }
 
 export async function addObligation(clientId: string, _: ClientFormState, formData: FormData): Promise<ClientFormState> {

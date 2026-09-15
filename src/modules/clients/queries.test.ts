@@ -68,7 +68,7 @@ describe("shared Dashboard aggregation", () => {
   });
   it("uses the shared totals, owner-scoped joins, and only open obligations on the Dashboard", async () => {
     await getDashboardData(owner);
-    expect(execute).toHaveBeenCalledTimes(8);
+    expect(execute).toHaveBeenCalledTimes(12);
     for (const [, params] of execute.mock.calls) expect(params).toContain(owner);
     const [sql, params] = execute.mock.calls.find(([sql]) => sql.includes('from "client_obligations"'))!;
     expect(sql).toContain('"client_obligations"."done" =');

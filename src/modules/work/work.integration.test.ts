@@ -30,6 +30,7 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
   let correctedTime: Date;
   let obligationDone: boolean;
   let sharedTask: boolean;
+  let secondTaskDone: boolean;
   const common = (n: number, rowOwner = owner, parent = matterId) => `'${id(n)}'::uuid, '${rowOwner}'::uuid, '${parent}'::uuid`;
   const stamps = "'2026-09-08'::timestamptz, '2026-09-08'::timestamptz";
   beforeAll(() => {
@@ -68,7 +69,7 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
           (${common(13)}, null, 'completed', null, true, ${stamps}),
           (${common(14, other)}, null, 'other owner task', null, false, ${stamps}),
           (${common(15, owner, other)}, null, 'other matter task', null, false, ${stamps})
-          ${sharedTask ? `,(${common(16)}, '${id(3)}'::uuid, 'second linked task', null, false, ${stamps})` : ""}),
+          ${sharedTask ? `,(${common(16)}, '${id(3)}'::uuid, 'second linked task', null, ${secondTaskDone}, ${stamps})` : ""}),
         client_obligations(id, owner_user_id, client_id, matter_id, deadline_id, title, description, due_date, done, created_at, updated_at) as (values
           ('${id(31)}'::uuid, '${owner}'::uuid, '${clientId}'::uuid, null::uuid, null::uuid, 'standalone obligation', null::text, null::date, false, ${stamps}),
           ('${id(32)}'::uuid, '${owner}'::uuid, '${clientId}'::uuid, '${matterId}'::uuid, null, 'matter-only obligation', null, null, false, ${stamps}),
@@ -86,7 +87,7 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-09-08T10:00:00Z"));
   });
-  beforeEach(() => { clientOwner = owner; matterOwner = owner; done = false; obligationDone = false; sharedTask = false; deadlineTime = "2026-09-10T12:00:00Z"; });
+  beforeEach(() => { clientOwner = owner; matterOwner = owner; done = false; obligationDone = false; sharedTask = false; secondTaskDone = false; deadlineTime = "2026-09-10T12:00:00Z"; });
   afterAll(async () => { vi.useRealTimers(); await connection?.end({ timeout: 1 }); });
 
   it("orders Matter work, retains historical dates and separates open/completed Tasks", async () => {
@@ -102,12 +103,29 @@ describe.skipIf(process.env.CRM_READONLY_DB_TEST !== "1")("PostgreSQL work and D
     expect(result.deadlines.map((row) => row.isOverdue)).toEqual([true, false, false]);
     expect(result.importantDates.map((row) => row.title)).toEqual(["future event"]);
   });
-  it("removes completed work from Dashboard while preserving it on Matter, and restores undone work", async () => {
+  it("does not show an overdue Deadline after its only linked Task is completed, and reactivates it when reopened", async () => {
+    deadlineTime = "2026-09-07T12:00:00Z";
     done = true;
-    expect((await getDashboardData(owner)).tasks.map((row) => row.title)).toEqual(["no deadline"]);
+    expect((await getDashboardData(owner)).deadlines.map((row) => row.title)).not.toContain("linked");
     expect((await getMatterWork(owner, matterId)).tasks.find((row) => row.title === "linked task")?.done).toBe(true);
     done = false;
-    expect((await getDashboardData(owner)).tasks.map((row) => row.title)).toContain("linked task");
+    const reopened = await getDashboardData(owner);
+    expect(reopened.deadlines.find((row) => row.title === "linked")?.isOverdue).toBe(true);
+  });
+  it("keeps a linked Deadline active while any of multiple Tasks remains undone", async () => {
+    deadlineTime = "2026-09-07T12:00:00Z";
+    done = true; sharedTask = true; secondTaskDone = false;
+    expect((await getDashboardData(owner)).deadlines.find((row) => row.title === "linked")?.isOverdue).toBe(true);
+  });
+  it("resolves a linked Deadline only after all of multiple Tasks are completed", async () => {
+    deadlineTime = "2026-09-07T12:00:00Z";
+    done = true; sharedTask = true; secondTaskDone = true;
+    expect((await getDashboardData(owner)).deadlines.map((row) => row.title)).not.toContain("linked");
+  });
+  it("keeps unlinked Deadline behavior unchanged", async () => {
+    const dashboard = await getDashboardData(owner);
+    expect(dashboard.deadlines.find((row) => row.title === "overdue standalone")?.isOverdue).toBe(true);
+    expect(dashboard.deadlines.map((row) => row.title)).toContain("upcoming standalone");
   });
   it("reflects a Deadline date correction in linked Tasks on both views", async () => {
     deadlineTime = "2026-09-15T12:00:00Z";

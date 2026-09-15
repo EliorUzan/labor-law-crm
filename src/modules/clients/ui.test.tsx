@@ -8,7 +8,7 @@ import type { ClientDetail } from "./queries";
 import type { ClientFormState } from "./actions";
 
 const mock = vi.hoisted(() => ({ save: vi.fn() }));
-vi.mock("./actions", () => ({ createClient: mock.save, updateClient: mock.save, addFinancialRecord: mock.save,
+vi.mock("./actions", () => ({ createClient: mock.save, updateClient: mock.save, addFinancialRecord: mock.save, updateFinancialRecord: mock.save,
   addObligation: mock.save, updateObligation: mock.save, setObligationCompletion: mock.save }));
 const clientId = "22222222-2222-4222-8222-222222222222";
 const data: ClientDetail = {
@@ -58,6 +58,14 @@ describe("Client presentation", () => {
     expect(checkbox.closest("details")?.hasAttribute("open")).toBe(false);
     expect(container.textContent).toContain("יתרת זכות");
     expect(container.textContent).toContain("-0.01 ₪");
+  });
+  it("renders an edit form for displayed financial records", () => {
+    container.innerHTML = renderToStaticMarkup(<ClientDetailView today="2026-09-08" data={{ ...data,
+      records: [{ id: "33333333-3333-4333-8333-333333333333", type: "payment", amount: "12.30", recordDate: "2026-09-08", description: "שולם", matterId: null, updatedAt: new Date("2026-09-08T12:00:00Z") }],
+    }} />);
+    expect(container.textContent).toContain("עריכת רשומה כספית");
+    const amountInputs = container.querySelectorAll('input[name="amount"]');
+    expect(amountInputs.item(amountInputs.length - 1).getAttribute("value")).toBe("12.30");
   });
 });
 

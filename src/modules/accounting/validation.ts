@@ -1,12 +1,25 @@
 import { z } from "zod";
 import { accountingLiabilityType, taxPaymentKind, trustTransactionType } from "@/db/schema";
 import { amountSchema, calendarDateSchema, recordIdSchema } from "@/modules/clients/validation";
-import { optionalSafeHttpsUrlSchema } from "@/modules/documents/validation";
 
 const emptyToNull = (value: unknown) => value === undefined || value === null || (typeof value === "string" && !value.trim()) ? null : value;
 const optionalText = (max: number) => z.preprocess(emptyToNull, z.string().trim().max(max).nullable());
 const optionalAmount = z.preprocess(emptyToNull, amountSchema.nullable());
 const optionalId = z.preprocess(emptyToNull, recordIdSchema.nullable());
+export function getSafeHttpsUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+const optionalSafeHttpsUrlSchema = z.preprocess(
+  emptyToNull,
+  z.string().trim().max(2048, "הקישור ארוך מדי.")
+    .refine((value) => getSafeHttpsUrl(value) !== null, "יש להזין קישור HTTPS תקין ללא פרטי התחברות.")
+    .nullable(),
+);
 
 export const manualIncomeSchema = z.object({ recordDate: calendarDateSchema, description: z.string().trim().min(1, "יש להזין תיאור.").max(10000), amount: amountSchema, notes: optionalText(10000) });
 export const expenseSchema = z.object({ recordDate: calendarDateSchema, description: z.string().trim().min(1, "יש להזין תיאור.").max(10000), amount: amountSchema, category: optionalText(100), documentLink: optionalSafeHttpsUrlSchema, notes: optionalText(10000) });
@@ -16,9 +29,11 @@ export const taxPaymentSchema = z.object({ paymentKind: z.enum(taxPaymentKind.en
 });
 export const accountingLiabilitySchema = z.object({ liabilityType: z.enum(accountingLiabilityType.enumValues), amount: amountSchema, dueDate: z.preprocess(emptyToNull, calendarDateSchema.nullable()), period: optionalText(100), description: optionalText(10000), notes: optionalText(10000) });
 export const accountingObligationSchema = z.object({ title: z.string().trim().min(1, "יש להזין כותרת.").max(300), dueDate: z.preprocess(emptyToNull, calendarDateSchema.nullable()), type: optionalText(100), period: optionalText(100), amount: optionalAmount, description: optionalText(10000) });
+export const legacyAccountingRecordSchema = z.object({ type: z.string().trim().min(1, "יש להזין סוג.").max(100), recordDate: calendarDateSchema, description: z.string().trim().min(1, "יש להזין תיאור.").max(10000), amount: optionalAmount, documentLink: optionalSafeHttpsUrlSchema, notes: optionalText(10000) });
 export type ManualIncomeFields = z.infer<typeof manualIncomeSchema>;
 export type ExpenseFields = z.infer<typeof expenseSchema>;
 export type TrustTransactionFields = z.infer<typeof trustTransactionSchema>;
 export type TaxPaymentFields = z.infer<typeof taxPaymentSchema>;
 export type AccountingLiabilityFields = z.infer<typeof accountingLiabilitySchema>;
 export type AccountingObligationFields = z.infer<typeof accountingObligationSchema>;
+export type LegacyAccountingRecordFields = z.infer<typeof legacyAccountingRecordSchema>;

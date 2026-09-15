@@ -29,6 +29,24 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
   const { error } = await supabase.auth.signInWithPassword(credentials.data);
 
   if (error) {
+    // Keep the browser message generic, but retain the provider's non-secret
+    // status/code for diagnosing account configuration and auth outages.
+    console.error(
+      "[auth] sign-in failed",
+      `name=${error.name}`,
+      `code=${error.code ?? "none"}`,
+      `status=${error.status ?? "none"}`,
+      `message=${error.message}`,
+    );
+    if (error.code === "email_not_confirmed") {
+      return { error: "יש לאשר את כתובת האימייל של המשתמש ב-Supabase לפני ההתחברות." };
+    }
+    if (error.code === "user_banned") {
+      return { error: "המשתמש חסום ב-Supabase. יש להסיר את החסימה לפני ההתחברות." };
+    }
+    if (error.status === 429) {
+      return { error: "בוצעו יותר מדי ניסיונות. נסו שוב בעוד כמה דקות." };
+    }
     return { error: "ההתחברות נכשלה. בדקו את כתובת האימייל והסיסמה." };
   }
 

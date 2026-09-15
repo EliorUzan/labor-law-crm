@@ -8,6 +8,8 @@ import {
 } from "./format";
 import type { ReactNode } from "react";
 import type { DashboardData } from "./queries";
+import { SmartCalendar } from "./calendar";
+import { defaultImportantDateTypes } from "@/modules/work/presentation";
 import { toJerusalemDate } from "@/modules/work/time";
 
 function DashboardSection({
@@ -31,6 +33,17 @@ function Metadata({ children }: Readonly<{ children: ReactNode }>) {
   return <p className="mt-1 text-sm text-stone-500">{children}</p>;
 }
 
+/** Keeps the Client → Matter context visible and independently navigable in every Dashboard row. */
+function MatterContext({ clientId, clientName, matterId, matterTitle }: {
+  clientId: string; clientName: string; matterId: string; matterTitle: string;
+}) {
+  return <span className="inline-flex max-w-full flex-wrap items-baseline gap-x-1" dir="rtl">
+    <Link className="break-words text-teal-700 underline" href={`/clients/${clientId}`}><bdi>{clientName}</bdi></Link>
+    <span aria-hidden="true">|</span>
+    <Link className="break-words text-teal-700 underline" href={`/matters/${matterId}`}><bdi>{matterTitle}</bdi></Link>
+  </span>;
+}
+
 export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
   const accountingObligations = data.accountingObligations ?? [];
   return (
@@ -39,6 +52,8 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
         <p className="text-sm font-medium text-teal-700">ניהול משרד</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-stone-900">לוח בקרה</h1>
       </header>
+
+      <SmartCalendar events={data.calendarEvents ?? []} matters={data.matterOptions ?? []} options={data.typeOptions ?? defaultImportantDateTypes} initialDate={data.generatedAt} />
 
       <DashboardSection className="border-teal-200" title="דדליינים">
         <p className="mb-4 text-xs text-stone-500">עד 8 דדליינים באיחור ו־8 דדליינים קרובים. הרשימה המלאה נמצאת בכל תיק.</p>
@@ -50,7 +65,7 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
               <li className="flex flex-wrap items-start justify-between gap-4 py-3 first:pt-0 last:pb-0" key={deadline.id}>
                 <div className="min-w-0">
                   <Link className="break-words font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/matters/${deadline.matterId}#deadlines`}><bdi>{deadline.title}</bdi></Link>
-                  <Metadata>{deadline.matterTitle}</Metadata>
+                  <Metadata><MatterContext clientId={deadline.clientId} clientName={deadline.clientName} matterId={deadline.matterId} matterTitle={deadline.matterTitle} /></Metadata>
                 </div>
                 <div className="shrink-0 text-left">
                   <p className="text-sm font-medium text-stone-700" dir="ltr">
@@ -78,7 +93,7 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
                 <li className="py-3 first:pt-0 last:pb-0" key={task.id}>
                   <Link className="break-words font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/matters/${task.matterId}#tasks`}><bdi>{task.title}</bdi></Link>
                   <Metadata>
-                    {task.matterTitle}
+                    <MatterContext clientId={task.clientId} clientName={task.clientName} matterId={task.matterId} matterTitle={task.matterTitle} />
                     {task.deadlineTitle && task.deadlineAt
                       ? ` · דדליין: ${task.deadlineTitle} (${formatIsraeliDate(toJerusalemDate(task.deadlineAt))})`
                       : ""}
@@ -98,7 +113,7 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
                 <li className="flex flex-wrap items-start justify-between gap-4 py-3 first:pt-0 last:pb-0" key={event.id}>
                   <div className="min-w-0">
                     <Link className="break-words font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/matters/${event.matterId}#important-dates`}><bdi>{event.title}</bdi></Link>
-                    <Metadata>{[event.matterTitle, importantDateTypeLabel(event.type)].filter(Boolean).join(" · ")}</Metadata>
+                    <Metadata><MatterContext clientId={event.clientId} clientName={event.clientName} matterId={event.matterId} matterTitle={event.matterTitle} />{importantDateTypeLabel(event.type) && <> · {importantDateTypeLabel(event.type)}</>}</Metadata>
                   </div>
                   <p className="shrink-0 text-left text-sm text-stone-600" dir="ltr">
                     {formatIsraeliDateTime(event.eventAt)}
@@ -118,7 +133,7 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
                 <li className="py-3 first:pt-0 last:pb-0" key={obligation.id}>
                   <Link className="font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/clients/${obligation.clientId}#obligations`}>{obligation.title}</Link>
                   <Metadata>
-                    {[obligation.clientName, obligation.matterTitle].filter(Boolean).join(" · ")}
+                    {obligation.matterId && obligation.matterTitle ? <MatterContext clientId={obligation.clientId} clientName={obligation.clientName} matterId={obligation.matterId} matterTitle={obligation.matterTitle} /> : <Link className="text-teal-700 underline" href={`/clients/${obligation.clientId}`}><bdi>{obligation.clientName}</bdi></Link>}
                     {obligation.matterId && obligation.matterTitle && obligation.deadlineAt
                       ? ` · דדליין: ${obligation.deadlineTitle} (${formatIsraeliDate(toJerusalemDate(obligation.deadlineAt))})`
                       : obligation.dueDate ? ` · עד ${formatIsraeliDate(obligation.dueDate)}` : ""}
@@ -144,7 +159,7 @@ export function Dashboard({ data }: Readonly<{ data: DashboardData }>) {
               {data.recentMatters.map((matter) => (
                 <li className="py-3 first:pt-0 last:pb-0" key={matter.id}>
                   <Link className="break-words font-medium text-stone-900 hover:text-teal-700 hover:underline" href={`/matters/${matter.id}`}><bdi>{matter.title}</bdi></Link>
-                  <Metadata>{[matter.clientName, matterStatusLabel(matter.status)].filter(Boolean).join(" · ")}</Metadata>
+                  <Metadata><MatterContext clientId={matter.clientId} clientName={matter.clientName} matterId={matter.id} matterTitle={matter.title} />{matterStatusLabel(matter.status) && <> · {matterStatusLabel(matter.status)}</>}</Metadata>
                 </li>
               ))}
             </ul>

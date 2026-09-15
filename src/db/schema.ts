@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  bigint,
   check,
   date,
   foreignKey,
@@ -24,6 +25,24 @@ export const trustTransactionType = pgEnum("trust_transaction_type", ["receipt",
 export const taxPaymentKind = pgEnum("tax_payment_kind", ["tax", "vat"]);
 export const accountingLiabilityType = pgEnum("accounting_liability_type", ["tax", "vat"]);
 export const accountingLiabilityStatus = pgEnum("accounting_liability_status", ["open", "paid"]);
+/** Deliberately finite: documents attach only to implemented substantive records. */
+export const documentTargetType = pgEnum("document_target_type", [
+  "client",
+  "matter",
+  "financial_record",
+  "client_obligation",
+  "task",
+  "deadline",
+  "important_date",
+  "matter_history",
+  "matter_note",
+  "office_expense",
+  "manual_income",
+  "trust_transaction",
+  "tax_payment",
+  "accounting_liability",
+  "accounting_obligation",
+]);
 
 function timestamps() {
   return {
@@ -84,6 +103,23 @@ export const matters = pgTable(
     ),
     index("matters_owner_user_id_idx").on(table.ownerUserId),
     index("matters_owner_user_id_client_id_idx").on(table.ownerUserId, table.clientId),
+  ],
+);
+
+export const importantDateTypeRecords = pgTable(
+  "important_date_types",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    ownerUserId: uuid("owner_user_id").notNull(),
+    key: text("key").notNull(),
+    label: text("label").notNull(),
+    color: text("color").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps(),
+  },
+  (table) => [
+    unique("important_date_types_owner_key_unique").on(table.ownerUserId, table.key),
+    index("important_date_types_owner_active_idx").on(table.ownerUserId, table.isActive),
   ],
 );
 
@@ -192,6 +228,7 @@ export const deadlines = pgTable(
     ownerUserId: uuid("owner_user_id").notNull(),
     matterId: uuid("matter_id").notNull(),
     title: text("title").notNull(),
+    type: text("type").notNull().default("submissionDeadline"),
     deadlineAt: timestamp("deadline_at", { withTimezone: true }).notNull(),
     description: text("description"),
     ...timestamps(),
@@ -287,27 +324,43 @@ export const matterHistory = pgTable(
   ],
 );
 
-export const documentReferences = pgTable(
-  "document_references",
+/** A real file beneath the owner's configured, synchronized desktop root. */
+export const documents = pgTable(
+  "documents",
   {
     id: uuid("id").defaultRandom().primaryKey().notNull(),
     ownerUserId: uuid("owner_user_id").notNull(),
-    matterId: uuid("matter_id").notNull(),
     displayName: text("display_name").notNull(),
-    location: text("location").notNull(),
-    category: text("category"),
-    notes: text("notes"),
-    provider: text("provider"),
-    externalId: text("external_id"),
+    /** Canonical slash-delimited path relative to the machine-local configured root. */
+    relativePath: text("relative_path").notNull(),
+    mimeType: text("mime_type"),
+    extension: text("extension"),
+    sizeBytes: bigint("size_bytes", { mode: "number" }),
+    fileModifiedAt: timestamp("file_modified_at", { withTimezone: true }),
     ...timestamps(),
   },
   (table) => [
-    foreignKey({
-      name: "document_references_owner_user_id_matter_id_matters_owner_user_id_id_fk",
-      columns: [table.ownerUserId, table.matterId],
-      foreignColumns: [matters.ownerUserId, matters.id],
-    }).onDelete("restrict"),
-    index("document_references_owner_user_id_matter_id_idx").on(table.ownerUserId, table.matterId),
+    unique("documents_owner_relative_path_unique").on(table.ownerUserId, table.relativePath),
+    check("documents_relative_path_is_relative", sql`${table.relativePath} <> '' and ${table.relativePath} !~ '(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$))'`),
+    index("documents_owner_user_id_idx").on(table.ownerUserId),
+  ],
+);
+
+/** A CRM association; it never represents the physical location of a file. */
+export const documentLinks = pgTable(
+  "document_links",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    documentId: uuid("document_id").notNull(),
+    targetType: documentTargetType("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({ name: "document_links_document_id_documents_id_fk", columns: [table.documentId], foreignColumns: [documents.id] }).onDelete("restrict"),
+    unique("document_links_document_target_unique").on(table.documentId, table.targetType, table.targetId),
+    index("document_links_document_id_idx").on(table.documentId),
+    index("document_links_target_type_target_id_idx").on(table.targetType, table.targetId),
   ],
 );
 

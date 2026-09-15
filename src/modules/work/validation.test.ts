@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deadlineSchema, importantDateSchema, taskSchema, workTimeSchema } from "./validation";
-import { fromJerusalemInput, isDeadlineOverdue, toJerusalemInput } from "./time";
+import { fromJerusalemInput, isDeadlineOverdue, isDeadlineResolved, toJerusalemInput } from "./time";
 import { formatIsraeliDate } from "@/modules/dashboard/format";
 import { getTableColumns } from "drizzle-orm";
 import { tasks, deadlines } from "@/db/schema";
@@ -57,5 +57,14 @@ describe("Israeli date/time semantics", () => {
     expect(isDeadlineOverdue(now, now)).toBe(false);
     expect(isDeadlineOverdue(new Date(now.getTime() + 1), now)).toBe(false);
     expect(formatIsraeliDate("2026-09-14")).toBe("14.09.2026");
+  });
+  it("resolves linked Deadlines only when every Task is done, without changing unlinked ones", () => {
+    const now = new Date("2026-09-08T10:00:00Z"); const past = new Date("2026-09-08T09:00:00Z");
+    expect(isDeadlineResolved([{ done: true }])).toBe(true);
+    expect(isDeadlineOverdue(past, now, [{ done: true }])).toBe(false);
+    expect(isDeadlineOverdue(past, now, [{ done: true }, { done: false }])).toBe(true);
+    expect(isDeadlineResolved([{ done: true }, { done: true }])).toBe(true);
+    expect(isDeadlineOverdue(past, now, [{ done: false }])).toBe(true);
+    expect(isDeadlineOverdue(past, now, [])).toBe(true);
   });
 });

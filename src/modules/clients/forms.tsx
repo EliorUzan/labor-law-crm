@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { startTransition, useActionState, useId, useState } from "react";
-import { createClient, updateClient, addFinancialRecord, addObligation, updateObligation, setObligationCompletion, type ClientFormState } from "./actions";
+import { createClient, updateClient, addFinancialRecord, updateFinancialRecord, addObligation, updateObligation, setObligationCompletion, type ClientFormState } from "./actions";
 import { buttonClass, inputClass, clientStatusLabels, financialTypeLabels } from "./presentation";
 
 type ClientFields = { name: string; phone: string | null; email: string | null; address: string | null; notes: string | null; status: keyof typeof clientStatusLabels | null };
 type MatterOption = { id: string; title: string };
+type FinancialRecordFields = { type: keyof typeof financialTypeLabels; amount: string; recordDate: string; matterId: string | null; description: string | null };
 const initialState: ClientFormState = {};
 
 function Feedback({ state }: { state: ClientFormState }) {
@@ -47,20 +48,22 @@ function MatterSelect({ matters, value }: { matters: MatterOption[]; value?: str
   </select></label>;
 }
 
-export function FinancialRecordForm({ clientId, matters, today }: { clientId: string; matters: MatterOption[]; today: string }) {
-  const [state, action, pending] = useActionState(addFinancialRecord.bind(null, clientId), initialState);
+export function FinancialRecordForm({ clientId, matters, today, recordId, initial }: { clientId: string; matters: MatterOption[]; today: string; recordId?: string; initial?: FinancialRecordFields }) {
+  const save = recordId ? updateFinancialRecord.bind(null, clientId, recordId) : addFinancialRecord.bind(null, clientId);
+  const [state, action, pending] = useActionState(save, initialState);
+  const value = (field: keyof FinancialRecordFields) => state.values?.[field] ?? initial?.[field] ?? "";
   return <form action={action} className="mt-4 space-y-3" noValidate>
     <fieldset disabled={pending} className="grid min-w-0 gap-3 sm:grid-cols-2">
-      <label>סוג<select className={inputClass} name="type" defaultValue={state.values?.type ?? "charge"}>
+      <label>סוג<select className={inputClass} name="type" defaultValue={value("type") || "charge"}>
         {Object.entries(financialTypeLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      <label>סכום (₪)<input className={inputClass} name="amount" inputMode="decimal" dir="ltr" required defaultValue={state.values?.amount ?? ""} maxLength={15} /></label>
-      <label>תאריך<input className={inputClass} name="recordDate" type="date" required dir="ltr" defaultValue={state.values?.recordDate ?? today} /></label>
-      <MatterSelect matters={matters} value={state.values?.matterId} />
-      <label className="sm:col-span-2">הערה (אופציונלי)<textarea className={inputClass} name="description" rows={2} maxLength={10000} dir="auto" defaultValue={state.values?.description ?? ""} /></label>
+      <label>סכום (₪)<input className={inputClass} name="amount" inputMode="decimal" dir="ltr" required defaultValue={value("amount")} maxLength={15} /></label>
+      <label>תאריך<input className={inputClass} name="recordDate" type="date" required dir="ltr" defaultValue={value("recordDate") || today} /></label>
+      <MatterSelect matters={matters} value={value("matterId")} />
+      <label className="sm:col-span-2">הערה (אופציונלי)<textarea className={inputClass} name="description" rows={2} maxLength={10000} dir="auto" defaultValue={value("description")} /></label>
     </fieldset>
     <Feedback state={state} />
-    <button className={buttonClass} disabled={pending}>{pending ? "שומר…" : "שמור רשומה"}</button>
+    <button className={buttonClass} disabled={pending}>{pending ? "שומר…" : recordId ? "עדכן רשומה" : "שמור רשומה"}</button>
   </form>;
 }
 

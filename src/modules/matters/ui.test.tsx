@@ -69,7 +69,7 @@ describe("Matter presentation", () => {
   });
   it("links recent Dashboard Matters to the detail page with Hebrew status", () => {
     container.innerHTML = renderToStaticMarkup(<Dashboard data={{ generatedAt: new Date(), deadlines: [], tasks: [], importantDates: [], obligations: [],
-      recentMatters: [{ id: matterId, title: "תיק בדיקה", clientName: "לקוח", status: "closed" }],
+      recentMatters: [{ id: matterId, clientId, title: "תיק בדיקה", clientName: "לקוח", status: "closed" }],
       financialSummary: { outstandingAmount: "0", paymentsReceivedThisMonth: "0" },
     }} />);
     expect(container.querySelector(`a[href="/matters/${matterId}"]`)?.textContent).toBe("תיק בדיקה");

@@ -826,65 +826,23 @@ Upcoming Important Dates should appear on the Dashboard.
 
 # 15. Documents
 
-## DOC-001 — V1 uses document references
+## DOC-001 — V1 document references removed
 
-V1 should not build a complete legal-document storage platform.
+The prior Matter-only note-style document-reference feature is removed. Do not
+migrate, preserve, or compatibility-wrap it.
 
-Instead, the CRM stores references to files.
+## DOC-002 — V2 filesystem-first documents
 
----
+A V2 Document represents a real file under one configured local root that Google
+Drive for Desktop already synchronizes. The database stores a durable Document
+UUID, canonical root-relative path, useful file metadata, and finite links to
+implemented substantive CRM records. A file can have several CRM links without
+being copied or moved.
 
-## DOC-002 — Document reference fields
-
-A document reference may include:
-- display name;
-- Matter;
-- category/type — optional;
-- URL or location reference;
-- notes — optional.
-
----
-
-## DOC-003 — Supported V1 reference types
-
-A reference may point to:
-- Google Drive;
-- Dropbox;
-- another cloud service;
-- a local path/reference.
-
-The CRM does not need to synchronize the underlying file in V1.
-
----
-
-## DOC-004 — Local-machine limitation
-
-A normal web browser cannot safely receive arbitrary continuous access to local filesystem folders.
-
-Therefore:
-- V1 must not assume transparent local-folder synchronization;
-- local file references may be stored as metadata/reference only where practical.
-
----
-
-## DOC-005 — V2 cloud integration
-
-V2 should support real integration with:
-- Google Drive;
-- Dropbox.
-
-Some Clients may use different storage providers, so the design should not assume one provider only.
-
-Future-compatible metadata may include:
-
-```text
-provider
-external_id
-url
-display_name
-```
-
-Do not implement this integration in V1.
+The configured root is machine-local desktop configuration and is never stored as
+an absolute database path. Native operations must reject absolute paths, traversal
+and root escapes. Google OAuth/Drive API, provider IDs, and CRM file sync are not
+core V2 requirements.
 
 ---
 

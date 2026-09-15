@@ -17,7 +17,7 @@ Authenticated user
             ├── Tasks
             ├── Deadlines
             ├── Important dates
-            └── Document references
+            └── Documents (V2)
 
 Accounting records are office-level records.
 ```
@@ -42,7 +42,8 @@ authorized to see another user's records.
 | `important_dates` | matter reference, title, event date | description/type | Matter-level event date, distinct from a Deadline and Task. |
 | `matter_notes` | matter reference, content | generated creation/update timestamps | Informal working note. Displayed newest first by `created_at`; no title, tags, category, priority, or author selector. |
 | `matter_history` | matter reference, event date, title | description | Manually maintained milestone; displayed oldest first by `event_date`, then creation time for ties. |
-| `document_references` | matter reference, display name, location/URL | category, notes, provider, external ID | V1 metadata/reference only; no file storage or synchronization. |
+| `documents` | owner, display name, root-relative path | MIME type, extension, byte size, file timestamp | One real file beneath the configured synchronized root; durable CRM identity is its UUID. |
+| `document_links` | document, target type, target ID | creation timestamp | Finite, owner-validated links to implemented substantive records; unique per target. |
 | `accounting_records` | type, date, description | amount, document/link, notes | Office-level lightweight organizational record; not a tax/invoicing engine. |
 
 ## Relationship and integrity rules
@@ -58,8 +59,7 @@ authorized to see another user's records.
   owner and Client. A CHECK forbids independent `due_date` alongside a Deadline. Choosing a
   Deadline explicitly replaces that optional date; existing unpaired dates are
   untouched by migration. Unpairing clears only the association, never records.
-- Tasks, Deadlines, Important Dates, history entries, and document references
-  always belong to a Matter.
+- Tasks, Deadlines, Important Dates, history entries, and notes belong to a Matter.
 - A Task’s optional `deadline_id` must reference a Deadline from the same Matter.
   This is the only Task ↔ Deadline association; `deadlines` has no `task_id`, and
   Tasks have no separate due-date field. A Task form may create that standalone
@@ -129,15 +129,13 @@ No V1 schema is planned for teams, roles, organizations, leads, pipelines,
 generic entities/relations, inbox/email synchronization, AI suggestions, file
 blobs, OCR, cloud-provider sync tokens, client portals, or bookkeeping/invoices.
 
-## Thread 6 Documents and Accounting
+## Documents and Accounting
 
-V1 Document References are metadata and location references only. They are shown
-newest first on their owned Matter and only ordinary HTTPS references are offered
-as browser links; local paths remain text. Accounting Records remain separate
+The V1 note-style `document_references` feature is removed. V2 Documents represent
+real files within one machine-local synchronized root and store only canonical
+root-relative paths plus finite CRM links. Accounting Records remain separate
 office-level records, ordered newest first by their date. Their optional amount
-uses the existing exact `numeric(14,2)` storage and is displayed in Israeli
-shekels. See `docs/DOCUMENTS_ACCOUNTING.md` for the implemented UI and security
-rules.
+uses the existing exact `numeric(14,2)` storage and is displayed in Israeli shekels.
 
 ## Thread 6 follow-up — Financial control
 
@@ -149,3 +147,12 @@ optional Matter belonging to that Client. They never affect revenue or Client
 balances. Open/paid liabilities retain history; a linked Tax/VAT payment marks
 an open liability paid. Legacy `accounting_records` are retained and never
 silently classified or deleted.
+
+## V2 CRM 01 — Documents
+
+`documents` plus `document_links` support one physical file linked to several
+allowlisted substantive records. `documents.id` remains stable if a later native
+operation moves or renames the file; only canonical `relative_path` changes.
+Migration `0008_filesystem_first_document_correction.sql` removes the obsolete
+V1 table and prior provider/legacy schema without copying records. See
+[DOCUMENT_MODEL.md](DOCUMENT_MODEL.md) for ownership and migration semantics.

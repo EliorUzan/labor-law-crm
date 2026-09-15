@@ -268,36 +268,17 @@ They are not necessarily actionable tasks.
 
 ### V1
 
-Do **not** build full document storage.
-
-Use **document references**:
-- name
-- matter
-- type/category if useful
-- URL or location reference
-- notes
-
-May reference:
-- Google Drive URL
-- Dropbox URL
-- other cloud URL
-- local path/reference
-
-Browser limitations mean direct arbitrary local-machine sync is not a V1 assumption.
+The old note-style Document References feature is removed. V1 does not provide
+document storage or arbitrary local-file access.
 
 ### V2
 
-Plan for:
-- Google Drive integration
-- Dropbox integration
-- clients using different storage providers
-- richer document handling
-
-Future-compatible document references may use:
-- provider
-- external ID
-- URL
-- display name
+A Document is a real file under one machine-local root already synchronized by
+Google Drive for Desktop. The CRM stores its owner-scoped metadata, canonical
+root-relative path and finite substantive-record links; `documents.id` is the
+durable identity. There are no legacy-reference records, provider file IDs, Drive
+folder metadata, Google OAuth/API, or custom sync engine in the core model. See
+`docs/DOCUMENT_MODEL.md`.
 
 ---
 

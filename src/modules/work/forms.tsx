@@ -1,27 +1,28 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { buttonClass, inputClass } from "@/modules/clients/presentation";
-import { saveTask, saveDeadline, saveImportantDate, setTaskDone, type WorkFormState } from "./actions";
-import { importantDateTypes } from "./presentation";
+import { deleteDeadline, deleteImportantDate, saveTask, saveDeadline, saveImportantDate, setTaskDone, type WorkFormState } from "./actions";
+import { defaultImportantDateTypes, type ImportantDateTypeOption } from "./presentation";
 
 const initialState: WorkFormState = {};
 export type DeadlineOption = { id: string; label: string };
 type FormProps = {
   matterId: string; recordId?: string; initial?: Record<string, string>;
-  kind: "task" | "deadline" | "importantDate"; deadlines?: DeadlineOption[];
+  kind: "task" | "deadline" | "importantDate"; deadlines?: DeadlineOption[]; typeOptions?: ImportantDateTypeOption[];
 };
 
 /** The three small forms share feedback and fields but retain distinct actions/models. */
-export function WorkForm({ matterId, recordId, initial, kind, deadlines = [] }: FormProps) {
+export function WorkForm({ matterId, recordId, initial, kind, deadlines = [], typeOptions = defaultImportantDateTypes }: FormProps) {
   const save = kind === "task" ? saveTask : kind === "deadline" ? saveDeadline : saveImportantDate;
   const [state, action, pending] = useActionState(save.bind(null, matterId, recordId ?? null), initialState);
   const [createDeadline, setCreateDeadline] = useState(false);
   const [showDeadlineTime, setShowDeadlineTime] = useState(Boolean(initial?.deadlineTime));
   const [showNewDeadlineTime, setShowNewDeadlineTime] = useState(false);
+  const defaultType = initial?.type || (kind === "deadline" ? "submissionDeadline" : typeOptions[0]?.key ?? "");
+  const [typeValue, setTypeValue] = useState(defaultType);
   const value = (field: string) => state.values?.[field] ?? initial?.[field] ?? "";
   const noun = kind === "task" ? "משימה" : kind === "deadline" ? "דדליין" : "תאריך חשוב";
-  const typeListId = useId();
   return <form action={action} className="mt-4 space-y-3" noValidate>
     <fieldset disabled={pending} className="grid min-w-0 gap-3 sm:grid-cols-2">
       <legend className="mb-3 font-semibold">{recordId ? `עריכת ${noun}` : kind === "task" ? "משימה חדשה" : `${noun} חדש`}</legend>
@@ -53,9 +54,12 @@ export function WorkForm({ matterId, recordId, initial, kind, deadlines = [] }: 
           {!showNewDeadlineTime && <p className="mt-1 text-xs text-stone-500">ללא שעה, הדדליין יוגדר ל־17:00.</p>}
         </div>
       </>}
-      {kind === "importantDate" && <label>סוג (אופציונלי)
-        <input className={inputClass} name="type" maxLength={100} dir="auto" list={typeListId} defaultValue={value("type")} />
-        <datalist id={typeListId}>{Object.entries(importantDateTypes).map(([type, label]) => <option key={type} value={label} />)}</datalist>
+      {(kind === "importantDate" || kind === "deadline") && <label>סוג
+        <input type="hidden" name="type" value={state.values?.type ?? typeValue} />
+        <select className={inputClass} name="typeOption" value={state.values?.type ?? typeValue} onChange={(event) => setTypeValue(event.currentTarget.value)}>
+          <option value="">ללא סוג</option>
+          {typeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+        </select>
       </label>}
       <label className="sm:col-span-2">תיאור (אופציונלי)<textarea className={inputClass} name="description" rows={3} maxLength={10000} dir="auto" defaultValue={value("description")} /></label>
     </fieldset>
@@ -116,4 +120,17 @@ export function TaskCheckbox({ matterId, taskId, done, title }: { matterId: stri
     </label>
     {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
   </div>;
+}
+
+/** Keeps browser-only deletion confirmation inside a Client Component. */
+export function DeleteWorkRecordForm({ matterId, recordId, kind }: { matterId: string; recordId: string; kind: "deadline" | "importantDate" }) {
+  const remove = kind === "deadline" ? deleteDeadline : deleteImportantDate;
+  const [state, action, pending] = useActionState(remove.bind(null, matterId, recordId), initialState);
+  const label = kind === "deadline" ? "מחיקת דדליין" : "מחיקת תאריך";
+  const confirmation = kind === "deadline" ? "למחוק את הדדליין?" : "למחוק את התאריך החשוב?";
+
+  return <form className="mt-3" action={action} onSubmit={(event) => { if (!window.confirm(confirmation)) event.preventDefault(); }}>
+    {state.error && <p role="alert" className="mb-2 text-sm text-red-700">{state.error}</p>}
+    <button type="submit" className="text-sm text-red-700 underline" disabled={pending}>{pending ? "מוחק…" : label}</button>
+  </form>;
 }

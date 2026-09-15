@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { calendarDateSchema } from "@/modules/clients/validation";
 import { fromJerusalemInput } from "./time";
-import { importantDateTypes } from "./presentation";
 
 const emptyToNull = (value: unknown) => value == null || (typeof value === "string" && !value.trim()) ? null : value;
 const optionalText = (max: number) => z.preprocess(emptyToNull, z.string().trim().max(max, `יש להזין עד ${max} תווים.`).nullable());
@@ -24,7 +23,7 @@ const deadlineTimeSchema = z.preprocess(emptyToNull, z.string()
 
 // A deadline is ordinarily a calendar day. Time is deliberately opt-in; 17:00
 // Israel time is the legal/product default when the user leaves it unset.
-export const deadlineSchema = z.object({ title, description, deadlineDate: calendarDateSchema, deadlineTime: deadlineTimeSchema })
+export const deadlineSchema = z.object({ title, description, deadlineDate: calendarDateSchema, deadlineTime: deadlineTimeSchema, type: optionalText(100) })
   .transform((value, ctx) => {
     const deadlineAt = fromJerusalemInput(`${value.deadlineDate}T${value.deadlineTime ?? "17:00"}`);
     if (!deadlineAt) {
@@ -45,7 +44,5 @@ export const newTaskDeadlineSchema = z.object({
   }
   return { title: value.title, deadlineAt };
 });
-export const importantDateSchema = z.object({ title, description, eventAt: workTimeSchema,
-  type: optionalText(100).transform((value) => Object.entries(importantDateTypes).find(([, label]) => label === value)?.[0] ?? value),
-});
+export const importantDateSchema = z.object({ title, description, eventAt: workTimeSchema, type: optionalText(100) });
 export const taskDoneSchema = z.boolean();

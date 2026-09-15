@@ -7,7 +7,8 @@ import {
   clientObligations,
   clients,
   deadlines,
-  documentReferences,
+  documents,
+  documentLinks,
   financialRecords,
   importantDates,
   matterHistory,
@@ -30,7 +31,7 @@ describe("V1 schema", () => {
       deadlines,
       tasks,
       importantDates,
-      documentReferences,
+      documents,
       accountingRecords,
       manualIncome,
       officeExpenses,
@@ -45,6 +46,17 @@ describe("V1 schema", () => {
       expect(table).toHaveProperty("createdAt");
       expect(table).toHaveProperty("updatedAt");
     }
+  });
+
+  it("keeps filesystem-first document identity and associations separate", () => {
+    expect(documents).toHaveProperty("relativePath");
+    expect(documents).toHaveProperty("fileModifiedAt");
+    expect(documents).not.toHaveProperty("providerFileId");
+    expect(documents).not.toHaveProperty("legacyLocation");
+    expect(documentLinks).toHaveProperty("documentId");
+    expect(documentLinks).toHaveProperty("targetType");
+    expect(documentLinks).toHaveProperty("targetId");
+    expect(documentLinks).not.toHaveProperty("linkRole");
   });
 
   it("keeps tasks, deadlines, and important dates distinct", () => {

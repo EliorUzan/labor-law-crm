@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { drizzle } from "drizzle-orm/pg-proxy";
-import { createClient, updateClient, addFinancialRecord, addObligation, setObligationCompletion } from "./actions";
+import { createClient, updateClient, addFinancialRecord, updateFinancialRecord, addObligation, setObligationCompletion } from "./actions";
 
 const mocks = vi.hoisted(() => ({ auth: vi.fn(), database: vi.fn(), owns: vi.fn(), revalidate: vi.fn(), redirect: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ requireAuthenticatedUserId: mocks.auth }));
@@ -11,6 +11,8 @@ vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 const owner = "11111111-1111-4111-8111-111111111111";
 const clientId = "22222222-2222-4222-8222-222222222222";
 const obligationId = "33333333-3333-4333-8333-333333333333";
+const financialRecordId = "44444444-4444-4444-8444-444444444444";
+const matterId = "55555555-5555-4555-8555-555555555555";
 const execute = vi.fn<(sql: string, params: unknown[]) => Promise<{ rows: unknown[][] }>>();
 const form = (values: Record<string, string>) => {
   const result = new FormData();
@@ -33,6 +35,7 @@ describe("client mutations", () => {
       () => createClient({}, form({ name: "שם" })),
       () => updateClient(clientId, {}, form({ name: "שם" })),
       () => addFinancialRecord(clientId, {}, form({})),
+      () => updateFinancialRecord(clientId, financialRecordId, {}, form({})),
       () => addObligation(clientId, {}, form({})),
       () => setObligationCompletion(clientId, obligationId, {}, form({ done: "true" })),
     ]) await expect(run()).rejects.toThrow("login redirect");
@@ -58,6 +61,7 @@ describe("client mutations", () => {
   it("prevents child inserts under an inaccessible client or mismatched Matter", async () => {
     mocks.owns.mockResolvedValue(false);
     expect((await addFinancialRecord(clientId, {}, form({ type: "charge", amount: "1", recordDate: "2026-09-08", matterId: obligationId }))).error).toBeTruthy();
+    expect((await updateFinancialRecord(clientId, financialRecordId, {}, form({ type: "payment", amount: "1", recordDate: "2026-09-08", matterId: obligationId }))).error).toBeTruthy();
     expect((await addObligation(clientId, {}, form({ title: "לחזור ללקוח", matterId: obligationId }))).error).toBeTruthy();
     expect(mocks.owns).toHaveBeenCalledWith(owner, clientId, obligationId);
     expect(execute).not.toHaveBeenCalled();
@@ -67,6 +71,24 @@ describe("client mutations", () => {
     expect(execute.mock.calls[0][1]).toContain("1.20");
     expect(mocks.revalidate).toHaveBeenCalledWith(`/clients/${clientId}`);
     expect(mocks.revalidate).toHaveBeenCalledWith("/");
+    expect(mocks.revalidate).toHaveBeenCalledWith("/accounting");
+  });
+  it("edits a financial record by record, client, owner, and new Matter", async () => {
+    execute.mockResolvedValueOnce({ rows: [[null]] }).mockResolvedValueOnce({ rows: [[financialRecordId]] });
+    const state = await updateFinancialRecord(clientId, financialRecordId, {}, form({ type: "payment", amount: "44.5", recordDate: "2026-09-09", matterId }));
+    expect(state.success).toBeTruthy();
+    expect(mocks.owns).toHaveBeenCalledWith(owner, clientId, matterId);
+    const [selectSql, selectParams] = execute.mock.calls[0];
+    const [updateSql, updateParams] = execute.mock.calls[1];
+    for (const sql of [selectSql, updateSql]) {
+      expect(sql).toContain('"financial_records"."id" =');
+      expect(sql).toContain('"financial_records"."client_id" =');
+      expect(sql).toContain('"financial_records"."owner_user_id" =');
+    }
+    expect(selectParams).toEqual(expect.arrayContaining([financialRecordId, clientId, owner]));
+    expect(updateParams).toEqual(expect.arrayContaining(["payment", "44.50", "2026-09-09", matterId, financialRecordId, clientId, owner]));
+    expect(mocks.revalidate).toHaveBeenCalledWith(`/clients/${clientId}`);
+    expect(mocks.revalidate).toHaveBeenCalledWith(`/matters/${matterId}`);
   });
   it("creates obligations open even if the submitted form requests done", async () => {
     await addObligation(clientId, {}, form({ title: "לחזור ללקוח", done: "true" }));

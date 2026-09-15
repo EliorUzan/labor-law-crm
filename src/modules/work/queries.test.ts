@@ -51,13 +51,13 @@ describe("owned work queries", () => {
   it("Dashboard scopes all work through owned parents and filters/sorts before limiting", async () => {
     await getDashboardData(owner);
     const workCalls = execute.mock.calls.filter(([sql]) => /from "(tasks|deadlines|important_dates)"/.test(sql));
-    expect(workCalls).toHaveLength(4);
+    expect(workCalls).toHaveLength(6);
     for (const [sql, params] of workCalls) {
       expect(sql).toContain('"clients"."owner_user_id" =');
       expect(sql).toContain('"matters"."owner_user_id" =');
       expect(params).toContain(owner);
     }
-    const [taskSql, taskParams] = workCalls.find(([sql]) => sql.includes('from "tasks"'))!;
+    const [taskSql, taskParams] = workCalls.find(([sql]) => sql.includes('from "tasks" inner join'))!;
     expect(taskSql).toContain('"tasks"."done" =');
     expect(taskParams).toContain(false);
     expect(taskSql).toContain('"deadlines"."deadline_at" asc nulls last');
@@ -65,9 +65,13 @@ describe("owned work queries", () => {
     const [dateSql] = workCalls.find(([sql]) => sql.includes('from "important_dates"'))!;
     expect(dateSql).toContain('"important_dates"."event_at" >=');
     const deadlineSql = workCalls.filter(([sql]) => sql.includes('from "deadlines"')).map(([sql]) => sql);
-    expect(deadlineSql[0]).toContain('"deadlines"."deadline_at" <');
-    expect(deadlineSql[1]).toContain('"deadlines"."deadline_at" >=');
-    for (const sql of deadlineSql) expect(sql).not.toContain('join "tasks"');
+    expect(deadlineSql.some((sql) => sql.includes('"deadlines"."deadline_at" <'))).toBe(true);
+    expect(deadlineSql.some((sql) => sql.includes('"deadlines"."deadline_at" >='))).toBe(true);
+    for (const sql of deadlineSql.filter((sql) => /"deadlines"\."deadline_at" [<>]=?/.test(sql))) {
+      expect(sql).not.toContain('join "tasks"');
+      expect(sql).toContain("not exists (select 1 from");
+      expect(sql).toContain("exists (select 1 from");
+    }
   });
   it("scopes reverse obligation references through Client, Matter and Deadline", async () => {
     await getMatterWork(owner, matterId);
@@ -79,10 +83,13 @@ describe("owned work queries", () => {
   });
   it("classifies standalone deadlines and returns current Task association data", async () => {
     execute.mockImplementation(async (sql) => {
-      if (sql.includes('from "deadlines"')) return { rows: sql.includes('"deadline_at" <')
-        ? [[recordId, matterId, "עבר", "תיק", "2000-01-01T12:00:00Z"]]
-        : [["future", matterId, "עתידי", "תיק", "2099-01-01T12:00:00Z"]] };
-      if (sql.includes('from "tasks"')) return { rows: [[recordId, matterId, "משימה", "תיק", "עתידי", "2099-01-01T12:00:00Z"]] };
+      if (sql.includes('from "deadlines"')) {
+        if (sql.includes('"deadlines"."description"')) return { rows: [[recordId, "client", matterId, "עבר", "תיק", "לקוח", "2000-01-01T12:00:00Z", null, null]] };
+        return { rows: sql.includes('"deadline_at" <')
+          ? [[recordId, "client", "לקוח", matterId, "עבר", "תיק", "2000-01-01T12:00:00Z"]]
+          : [["future", "client", "לקוח", matterId, "עתידי", "תיק", "2099-01-01T12:00:00Z"]] };
+      }
+      if (sql.includes('from "tasks"')) return { rows: [[recordId, "client", "לקוח", matterId, "משימה", "תיק", "עתידי", "2099-01-01T12:00:00Z"]] };
       return { rows: [] };
     });
     const data = await getDashboardData(owner);

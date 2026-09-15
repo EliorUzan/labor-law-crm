@@ -32,6 +32,11 @@ export function fromJerusalemInput(value: string): Date | null {
   return candidates[0] ?? null;
 }
 
-export function isDeadlineOverdue(deadlineAt: Date, now: Date): boolean {
-  return deadlineAt.getTime() < now.getTime();
+/** A linked Deadline is resolved only when every linked Task is done. */
+export function isDeadlineResolved(linkedTasks: readonly { done: boolean }[]): boolean {
+  return linkedTasks.length > 0 && linkedTasks.every((task) => task.done);
+}
+
+export function isDeadlineOverdue(deadlineAt: Date, now: Date, linkedTasks: readonly { done: boolean }[] = []): boolean {
+  return !isDeadlineResolved(linkedTasks) && deadlineAt.getTime() < now.getTime();
 }

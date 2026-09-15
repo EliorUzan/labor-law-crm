@@ -68,6 +68,9 @@ export function ClientDetailView({ data, today, trustBalance }: { data: ClientDe
         <div className="min-w-0 flex-1"><p className="font-medium">{financialTypeLabels[record.type]} <span className="ms-2 text-sm font-normal text-stone-500">{formatIsraeliDate(record.recordDate)}</span></p>
           {record.description && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-stone-600" dir="auto">{record.description}</p>}
           {record.matterId && <p className="mt-1 text-sm text-stone-500">{matterNames.get(record.matterId)}</p>}
+          <details className="mt-3"><summary className="cursor-pointer text-sm text-teal-700">עריכת רשומה כספית</summary>
+            <FinancialRecordForm key={record.updatedAt.toISOString()} clientId={client.id} recordId={record.id} matters={matters} today={today} initial={record} />
+          </details>
         </div><bdi className="font-semibold" dir="ltr">{formatIsraeliShekels(record.amount)}</bdi>
       </li>)}</ul> : <p className="mt-2 text-sm text-stone-500">אין רשומות כספיות ללקוח זה.</p>}
     </section>
