@@ -82,6 +82,14 @@ use AES-256-GCM with the server environment key. This table has RLS enabled and 
 grants to PUBLIC/anon/authenticated. Tokens never reach renderer props, browser
 storage, or logs. OAuth uses an encrypted, expiring, owner-bound state cookie.
 
+Google OAuth client credentials are shared deployment configuration: one Cloud
+project/client ID and secret identify the CRM installation. They are not Google
+accounts and are not repeated per user. Each authenticated user separately grants
+their Google account through Settings; that user's encrypted refresh token, Drive
+account identity and selected root are stored in their owner-scoped connection
+row. A Google app in Testing mode must add every intended user as a test user
+until the app is published/verified.
+
 Migration `0008` is an earlier corrective migration that removes the obsolete V1
 reference/provider model. Check those tables before applying it to an old database;
 it is destructive for records still in that discarded schema.

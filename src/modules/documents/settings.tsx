@@ -20,7 +20,7 @@ const oauthMessages: Record<string, string> = {
   failed: "החיבור ל-Google Drive לא הושלם. נסו שוב.",
 };
 
-export function DocumentSettings({ oauthStatus }: { oauthStatus?: string }) {
+export function DocumentSettings({ oauthStatus, callbackUrl }: { oauthStatus?: string; callbackUrl: string }) {
   const [settings, setSettings] = useState<Awaited<ReturnType<typeof documentSettings>> | null>(null);
   const [desktop, setDesktop] = useState(false);
   const [localRoot, setLocalRoot] = useState<string | null>(null);
@@ -70,9 +70,22 @@ export function DocumentSettings({ oauthStatus }: { oauthStatus?: string }) {
           <li>אם היישום מבקש הפעלה מחדש, שמרו עבודה פתוחה, סגרו לגמרי את יישום ה-CRM ופתחו אותו שוב. רענון הדף בלבד אינו מספיק.</li>
         </ul>
       </details>
+      <details className="mt-3 border-t border-teal-200 pt-3" open={!value?.configured}>
+        <summary className="cursor-pointer font-semibold">למנהל/ת המערכת בלבד: הכנה חד-פעמית של החיבור ל-Google</summary>
+        <p className="mt-2">השלבים הבאים מבוצעים פעם אחת עבור מערכת ה-CRM כולה. ה-Client ID וה-Client Secret מזהים את מערכת ה-CRM מול Google — הם אינם מזהים משתמש מסוים. משתמשים לא צריכים ליצור מזהה או סוד משלהם. אותו זוג מזהים משמש את כל משתמשי המשרד.</p>
+        <ol className="mt-2 list-decimal space-y-2 ps-5">
+          <li>פתחו את <a className="text-teal-800 underline" href="https://console.cloud.google.com" target="_blank" rel="noreferrer">Google Cloud Console</a>, צרו פרויקט חדש או בחרו בפרויקט הקיים של המשרד.</li>
+          <li>עברו אל <strong>APIs &amp; Services → Library</strong>, חפשו <strong>Google Drive API</strong> ולחצו <strong>Enable</strong>. חשוב: זהו Google Drive API, ולא Google Drive Activity API.</li>
+          <li>עברו אל <strong>Google Auth Platform → Audience</strong>. אם משתמשים בחשבונות Gmail אישיים, בחרו <strong>External</strong>. כל עוד האפליקציה במצב Testing, הוסיפו תחת <strong>Test users</strong> כל אדם שאמור להתחבר ל-Drive. כאשר מצטרף משתמש חדש, מוסיפים כאן את כתובת ה-Gmail שלו — אין צורך ליצור או להחליף Client ID או Client Secret.</li>
+          <li>עברו אל <strong>Google Auth Platform → Clients</strong>, צרו <strong>OAuth client</strong> מסוג <strong>Web application</strong>, והוסיפו תחת Authorized redirect URIs את הכתובת המדויקת: <code dir="ltr" className="break-all rounded bg-white px-1">{callbackUrl}</code>.</li>
+          <li>העתיקו את ה-Client ID ואת ה-Client Secret אל <strong>Vercel → Project → Settings → Environment Variables</strong>, בסביבת Production, תחת השמות <code>GOOGLE_DRIVE_CLIENT_ID</code> ו-<code>GOOGLE_DRIVE_CLIENT_SECRET</code>. הוסיפו גם <code>NEXT_PUBLIC_APP_URL</code> עם כתובת המערכת, ומפתח הצפנה קבוע בשם <code>DOCUMENT_TOKEN_ENCRYPTION_KEY</code>. אל תזינו את הסוד בשדה כלשהו ב-CRM ואל תשתפו אותו בצ׳אט. כדי להוסיף משתמש חדש, משאירים את שני המשתנים האלה כפי שהם.</li>
+          <li>בצעו Redeploy ב-Vercel. לאחר מכן כל משתמש נכנס ל-CRM עם החשבון שלו, לוחץ על „חיבור Google Drive”, ומאשר את חשבון Google שלו. החיבור והתיקייה נשמרים בנפרד עבור אותו משתמש בלבד.</li>
+        </ol>
+        <p className="mt-3 text-stone-700">לדוגמה: כתובת Gmail של משתמש היא חשבון Google שמקבל גישה בזמן בדיקה; היא אינה ה-Client ID ואינה נשמרת במשתני הסביבה. משתני הסביבה מכילים רק את ההגדרות המשותפות של מערכת ה-CRM. אם משתמש יצר Client ID משלו, אין להוסיף אותו ל-Vercel או להחליף בו את הקיים — יש להוסיף את כתובת ה-Gmail שלו לרשימת Test users של פרויקט Google הקיים.</p>
+      </details>
     </details>
     {settings && !settings.ok && <p role="alert" className="mt-3 text-red-700">{settings.error}</p>}
-    {value && !value.configured && <p className="mt-3 text-amber-800">חיבור Google Drive עדיין לא הוכן במערכת. פנו למי שהתקין עבורכם את ה-CRM כדי להפעיל את החיבור. לאחר מכן תוכלו לחבר את החשבון לפי ההוראות למעלה.</p>}
+    {value && !value.configured && <p className="mt-3 text-amber-800">חיבור Google Drive עדיין לא הוכן בצד השרת של מערכת זו. מנהל/ת המערכת צריך/ה להשלים את השלבים „הכנה חד-פעמית של החיבור ל-Google” במדריך למעלה; לאחר מכן כל משתמש יוכל לחבר את חשבון Google האישי שלו.</p>}
     {value?.configured && <div className="mt-4 space-y-4">
       <div className="flex flex-wrap items-center gap-3"><span>{value.connected ? "Google Drive מחובר" : "Google Drive אינו מחובר"}</span>
         <a className={buttonClass} href={desktop ? "/settings" : "/api/documents/google/start"} target={desktop ? "_blank" : undefined} rel="noreferrer">{desktop ? "חיבור Google Drive בדפדפן" : value.connected ? "חיבור מחדש" : "חיבור Google Drive"}</a>

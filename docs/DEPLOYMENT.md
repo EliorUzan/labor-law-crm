@@ -22,8 +22,48 @@ Import this repository, set the Node version from `.node-version`, and configure
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser-safe | Production Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser-safe | Production Supabase publishable key |
 | `NEXT_PUBLIC_APP_URL` | Browser-safe | Final `https://` application URL |
+| `GOOGLE_DRIVE_CLIENT_ID` | Server-only | Google OAuth Web application client ID |
+| `GOOGLE_DRIVE_CLIENT_SECRET` | Server-only secret | Matching Google OAuth client secret |
+| `DOCUMENT_TOKEN_ENCRYPTION_KEY` | Server-only secret | Stable random 32-byte key, encoded as exactly 64 hexadecimal characters |
 
 Use production HTTPS only. Vercel and Supabase provide TLS; do not configure a plain-HTTP production domain. Never prefix `DATABASE_URL` or privileged database credentials with `NEXT_PUBLIC_`.
+
+### Google Drive production setup
+
+The Google Drive connection is configured independently in each deployment
+environment. Values in `.env.local` are available only to the local development
+server; they are never uploaded to Vercel.
+
+In Vercel → Project → Settings → Environment Variables, add the three server-only
+Drive values above for the **Production** environment. Set `NEXT_PUBLIC_APP_URL`
+to the exact public URL, for example `https://labor-law-crm.vercel.app`. Create a
+new stable encryption value for production with:
+
+```bash
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+Store it in the deployment's secret manager and retain it for future deployments.
+Changing it later prevents the server from reading previously saved Drive tokens
+and temporary verification cookies.
+
+In Google Cloud → Google Auth Platform → Clients, add the exact authorized redirect
+URI for the production URL:
+
+```text
+https://labor-law-crm.vercel.app/api/documents/google/callback
+```
+
+In Google Auth Platform → Audience, choose **External** when office users have
+personal Gmail accounts. While the OAuth app remains in Testing, add every CRM
+user who should connect Drive as a Google test user. The OAuth client credentials
+remain shared deployment configuration; each user authorizes their own Drive
+account later in CRM Settings.
+
+Then redeploy Vercel. After deployment, visit Settings and connect Drive again;
+the production deployment stores its own encrypted connection and folder choice.
+Do not paste client secrets into chat, source control, or browser-accessible
+environment variables.
 
 Deploy after `pnpm run typecheck`, `pnpm run lint`, `pnpm run test`, and `pnpm run build` pass. The app sends security headers including a CSP, frame denial, MIME-sniffing protection, referrer policy, and a restrictive permissions policy.
 

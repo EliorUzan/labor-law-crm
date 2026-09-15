@@ -15,6 +15,11 @@
 - [ ] Production project and final domain are connected.
 - [ ] `DATABASE_URL` is configured as a server-only secret.
 - [ ] The two Supabase `NEXT_PUBLIC_` values and `NEXT_PUBLIC_APP_URL` are configured.
+- [ ] `GOOGLE_DRIVE_CLIENT_ID`, `GOOGLE_DRIVE_CLIENT_SECRET`, and a stable
+  64-character hexadecimal `DOCUMENT_TOKEN_ENCRYPTION_KEY` are configured for
+  the Production environment.
+- [ ] Google OAuth has the exact production callback URL authorized:
+  `https://<production-domain>/api/documents/google/callback`.
 - [ ] HTTPS is active and the custom security headers are present.
 
 ## Application
