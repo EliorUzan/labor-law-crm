@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { logout } from "@/app/login/actions";
+import { DesktopVersionStatus } from "@/modules/desktop-release/status";
 import { FirmBrand } from "@/components/firm-brand";
 
 const navigationItems = [
@@ -42,6 +43,10 @@ function Navigation({ compact = false }: { compact?: boolean }) {
       </ul>
     </nav>
   );
+}
+
+function DownloadLink() {
+  return <Link className="rounded-lg px-2 py-2 text-xs text-stone-500 hover:bg-stone-100 hover:text-stone-950" href="/downloads">הורדה למחשב</Link>;
 }
 
 function LogoutButton() {
@@ -86,23 +91,23 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
           <div className="mt-3"><QuickAddLink /></div>
         </div>
         <Navigation />
-        <div className="mt-auto border-t border-stone-200 pt-4">
-          <LogoutButton />
+        <div className="mt-auto flex items-center border-t border-stone-200 pt-4">
+          <LogoutButton /><DownloadLink />
         </div>
       </aside>
 
       <div className="min-w-0 flex-1">
         <header className="border-b border-stone-200 bg-white lg:hidden">
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
             <FirmBrand compact />
-            <div className="flex items-center gap-2"><QuickAddLink /><div className="w-24"><LogoutButton /></div></div>
+            <div className="flex items-center gap-2"><QuickAddLink /><div className="w-24"><LogoutButton /></div><DownloadLink /></div>
           </div>
           <div className="px-3 pb-3"><GlobalSearch compact /></div>
           <div className="border-t border-stone-100 px-3 pb-2">
             <Navigation compact />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10"><div className="mb-3 empty:hidden"><DesktopVersionStatus /></div>{children}</main>
       </div>
     </div>
   );

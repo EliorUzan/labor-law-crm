@@ -3,6 +3,7 @@ export {};
 declare global {
   interface Window {
     crmDesktop?: {
+      getAppInfo?(): Promise<unknown>;
       getBridgeInfo(): Promise<unknown>;
       documentSettings(): Promise<unknown>;
       chooseDocumentRoot(): Promise<unknown>;

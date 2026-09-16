@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { expect, it, vi } from "vitest";
 import native from "./documents.cjs";
 import security from "./security.cjs";
+import appInfo from "./app-info.cjs";
 
 it("registers every preload document channel before loading the CRM window", async () => {
   const handlers = new Map();
@@ -20,12 +21,13 @@ it("registers every preload document channel before loading the CRM window", asy
     BrowserWindow: class {
       webContents = { on: vi.fn(), setWindowOpenHandler: vi.fn() };
       loadURL() {
+        expect(handlers.has("desktop:app-info")).toBe(true);
         for (const channel of ["settings", "choose-root", "choose-files", "dropped-files", "open"]) expect(handlers.has(`documents:${channel}`)).toBe(true);
       }
     },
   };
   vm.runInNewContext(readFileSync(path.join(root, "main.cjs"), "utf8"), {
-    require: (name) => ({ "electron": electron, "node:path": path, "./documents.cjs": native, "./security.cjs": security })[name],
+    require: (name) => ({ "electron": electron, "node:path": path, "./documents.cjs": native, "./security.cjs": security, "./app-info.cjs": appInfo })[name],
     __dirname: root, URL, console, process: { platform: "win32" },
   });
   await startup;
@@ -37,6 +39,8 @@ it("registers every preload document channel before loading the CRM window", asy
   vm.runInNewContext(readFileSync(path.join(root, "preload.cjs"), "utf8"), {
     require: () => ({ contextBridge: { exposeInMainWorld: (_name, value) => { bridge = value; } }, ipcRenderer: { invoke }, webUtils: { getPathForFile: () => "G:/Drive/test.docx" } }),
   });
+  await bridge.getAppInfo();
+  expect(invoke).toHaveBeenLastCalledWith("desktop:app-info");
   await bridge.documentSettings(); await bridge.chooseDocumentRoot(); await bridge.chooseDocuments(); await bridge.droppedDocuments([{}]); await bridge.openDocument("test.docx");
   expect(invoke).toHaveBeenLastCalledWith("documents:open", "test.docx");
 });

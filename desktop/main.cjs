@@ -4,6 +4,7 @@
 const path = require("node:path");
 const { app, BrowserWindow, session, shell, ipcMain, dialog } = require("electron");
 const { installDocumentHandlers } = require("./documents.cjs");
+const { installAppInfoHandler } = require("./app-info.cjs");
 const { isCrmNavigation, isSafeExternalUrl, resolveCrmUrl } = require("./security.cjs");
 
 function createMainWindow(crmUrl) {
@@ -38,7 +39,8 @@ function createMainWindow(crmUrl) {
 }
 
 app.whenReady().then(() => {
-  const crmUrl = resolveCrmUrl();
+  const crmUrl = resolveCrmUrl(process.env, app.isPackaged ? require("./runtime-config.json") : null, app.isPackaged);
+  installAppInfoHandler({ ipcMain, app, crmUrl });
   installDocumentHandlers({ ipcMain, dialog, shell, app, crmUrl, contextFor: async (nativeSession) => {
     const response = await nativeSession.fetch(new URL("/api/documents/desktop-context", crmUrl).href, { redirect: "error" });
     if (!response.ok) throw new Error("יש להתחבר ל-CRM ולחבר תיקיית Google Drive בהגדרות.");

@@ -92,9 +92,13 @@ export function DocumentSettings({ oauthStatus, callbackUrl }: { oauthStatus?: s
         <button className={buttonClass} disabled={pending} onClick={() => action(async () => { setMessage("מצב החיבור עודכן."); })}>רענון מצב החיבור</button>
       </div>
       {desktop && <p className="text-sm text-stone-600">את ההרשאה לחשבון Google משלימים בדפדפן הרגיל. לאחר מכן חזרו לכאן ורעננו את מצב החיבור.</p>}
+      {value.connected && !value.rootId && desktop && <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm leading-6 text-amber-950">
+        <p className="font-semibold">שלב נדרש לפני בחירת תיקייה במחשב</p>
+        <p>חיבור חשבון Google הושלם, אך עדיין לא נבחרה תיקיית הבסיס של חשבון זה ב-Drive. הדביקו למטה קישור לתיקייה של המשתמש הנוכחי ושמרו. רק אחר כך יופיעו הכפתורים להכנת אימות ולבחירת התיקייה המקומית במחשב.</p>
+      </div>}
       {value.connected && <form className="space-y-2" onSubmit={(event) => { event.preventDefault(); action(async () => { const result = await setDriveRoot(rootUrl); if (!result.ok) throw new Error(result.error); setMessage("תיקיית Drive נשמרה ותיקיית CRM מוכנה."); }); }}>
         {value.rootName && <p>תיקיית Drive: <bdi>{value.rootName}</bdi></p>}
-        <label className="block text-sm">קישור לתיקיית הבסיס ב-Google Drive<input className={`${inputClass} mt-1`} dir="ltr" value={rootUrl} onChange={(event) => setRootUrl(event.target.value)} placeholder="https://drive.google.com/drive/folders/…" required /></label>
+        <label className="block text-sm">{value.rootId ? "שינוי תיקיית הבסיס ב-Google Drive" : "שלב 1: קישור לתיקיית הבסיס ב-Google Drive"}<input className={`${inputClass} mt-1`} dir="ltr" value={rootUrl} onChange={(event) => setRootUrl(event.target.value)} placeholder="https://drive.google.com/drive/folders/…" required /></label>
         <div className="flex flex-wrap gap-2"><button disabled={pending} className={buttonClass}>שמירת תיקייה</button><button type="button" className={buttonClass} onClick={() => setRootUrl("root")}>שימוש בכל האחסון שלי</button></div>
       </form>}
       {value.rootId && (desktop ? <div className="space-y-3 border-t border-stone-200 pt-4">

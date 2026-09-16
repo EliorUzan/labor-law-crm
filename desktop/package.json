@@ -1,0 +1,10 @@
+{
+  "name": "labor-law-crm-desktop",
+  "productName": "Labor Law CRM",
+  "version": "0.1.0",
+  "description": "Desktop access to the Labor Law CRM",
+  "author": "Labor Law CRM",
+  "private": true,
+  "main": "main.cjs",
+  "dependencies": {}
+}

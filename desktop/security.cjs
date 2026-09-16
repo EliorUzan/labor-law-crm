@@ -17,7 +17,11 @@ function isApprovedCrmUrl(value, development) {
   return url.protocol === "https:";
 }
 
-function resolveCrmUrl(environment = process.env) {
+function resolveCrmUrl(environment = process.env, packagedConfig = null, isPackaged = false) {
+  if (isPackaged) {
+    if (!isApprovedCrmUrl(packagedConfig?.crmUrl, false)) throw new Error("The packaged CRM URL is missing or invalid.");
+    return new URL(packagedConfig.crmUrl);
+  }
   const development = environment.NODE_ENV !== "production";
   const value = development
     ? environment.ELECTRON_START_URL ?? "http://localhost:3000"

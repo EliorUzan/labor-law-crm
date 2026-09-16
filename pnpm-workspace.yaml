@@ -1,4 +1,7 @@
+packages:
+  - desktop
 allowBuilds:
+  electron-winstaller: false
   esbuild: true
   unrs-resolver: true
 minimumReleaseAgeExclude:

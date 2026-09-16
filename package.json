@@ -9,8 +9,8 @@
   },
   "scripts": {
     "dev": "next dev",
-    "desktop:dev": "electron desktop/main.cjs",
-    "desktop:start": "electron desktop/main.cjs",
+    "desktop:dev": "electron desktop",
+    "desktop:start": "electron desktop",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -18,7 +18,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "desktop:pack": "node scripts/package-desktop.cjs dir",
+    "desktop:build:win": "node scripts/package-desktop.cjs win",
+    "desktop:build:mac": "node scripts/package-desktop.cjs mac",
+    "desktop:validate": "node scripts/validate-desktop.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
@@ -31,6 +35,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@electron/asar": "3.4.1",
     "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^24.10.1",
@@ -38,6 +43,7 @@
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
     "electron": "^44.2.0",
+    "electron-builder": "26.15.3",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.3.4",
     "jsdom": "^27.2.0",

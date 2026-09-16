@@ -6,6 +6,7 @@ const { contextBridge, ipcRenderer, webUtils } = require("electron");
 // Every native operation is validated in the main process. No generic filesystem
 // or shell capability is exposed to the remote renderer.
 contextBridge.exposeInMainWorld("crmDesktop", {
+  getAppInfo: () => ipcRenderer.invoke("desktop:app-info"),
   getBridgeInfo: () => Promise.resolve({
     platform: "desktop",
     bridgeVersion: "0.2.0",
